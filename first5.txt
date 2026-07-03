@@ -1,0 +1,51 @@
+Cell 0 type: markdown
+## PART 0 · Section 1 — Data Input: Knowledge Graph (BIM/Revit -> Neo4j -> PyG)
+Loads the heterogeneous KG exported from Neo4j (nodes: Building/Storey/Zone/Surface/System;
+edges: containment/adjacency
+
+Cell 1 type: code
+import time
+section_1_start = time.time()
+
+Cell 2 type: code
+from pi_hgat.config import NEO4J_JSON_PATH
+from pi_hgat.graph_builder import GraphBuilder
+print('Loading KG from Neo4j JSON...')
+builder = GraphBuilder(NEO4J_JSON_PATH)
+baseline_data = builder.create_
+
+Cell 3 type: markdown
+> ### 📊 FIGURE SLOT — **Fig. 2 · KG schema & case-study building** *(PART 0)*
+> **Content:** (a) DOE Medium Office 3D + HCMC context; (b) hetero-KG schema (node types Zone/Envelope/Material/System/Cli
+
+Cell 4 type: code
+# FIG 2b — heterogeneous KG meta-schema (programmatic). Panel (a) 3D building = external image.
+from scripts.analysis.fig_style import apply_style, savefig
+import networkx as nx
+apply_style()
+
+counts 
+
+Cell 5 type: code
+print(f'\n[Section 1] Execution time: {time.time() - section_1_start:.2f} seconds')
+
+Cell 6 type: markdown
+## PART 0 · Section 2 — Simulation Results: jEPlus LHS (9 climate scenarios x 250 samples)
+Loads `data/aggregated_LHS_results.csv` — REAL EnergyPlus results aggregated from
+`data/jEPlus-LHS/{1_Baselin
+
+Cell 7 type: code
+import time
+section_2_start = time.time()
+
+Cell 8 type: code
+print('Loading LHS samples from aggregated_LHS_results.csv...')
+from sklearn.model_selection import GroupShuffleSplit
+
+df_lhs = pd.read_csv(r'data/aggregated_LHS_results.csv')
+
+# Surrogate learns GROS
+
+Cell 9 type: code
+print(f'\n[Section 2] Execution time: {time.time() - section_2_start:.2f} seconds')
+

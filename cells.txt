@@ -1,0 +1,259 @@
+CELL 0 (markdown):
+# PI-HGAT NZEB Retrofit Pipeline — ICAE 2026
+
+**Integrated decision-support framework for hot-humid ...
+-----------------
+CELL 1 (code):
+import os, sys, json, time
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+im...
+-----------------
+CELL 2 (markdown):
+## PART 0 · Section 1 — Data Input: Knowledge Graph (BIM/Revit -> Neo4j -> PyG)
+Loads the heterogene...
+-----------------
+CELL 3 (code):
+import time
+section_1_start = time.time()...
+-----------------
+CELL 4 (code):
+print('Loading KG from Neo4j JSON...')
+builder = GraphBuilder(NEO4J_JSON_PATH)
+baseline_data = build...
+-----------------
+CELL 5 (markdown):
+> ### 📊 FIGURE SLOT — **Fig. 2 · KG schema & case-study building** *(PART 0)*
+> **Content:** (a) DOE...
+-----------------
+CELL 6 (code):
+# FIG 2 (Mock/Setup - requires external image layout, but we can print stats)
+print('Node Counts:', ...
+-----------------
+CELL 7 (code):
+print(f'\n[Section 1] Execution time: {time.time() - section_1_start:.2f} seconds')...
+-----------------
+CELL 8 (markdown):
+## PART 0 · Section 2 — Simulation Results: jEPlus LHS (9 climate scenarios x 250 samples)
+Loads `da...
+-----------------
+CELL 9 (code):
+import time
+section_2_start = time.time()...
+-----------------
+CELL 10 (code):
+print('Loading LHS samples from aggregated_LHS_results.csv...')
+import pandas as pd
+import numpy as ...
+-----------------
+CELL 11 (code):
+print(f'\n[Section 2] Execution time: {time.time() - section_2_start:.2f} seconds')...
+-----------------
+CELL 12 (markdown):
+## PART 1 · Section 3 — Build PyG HeteroData Dataset
+One heterogeneous graph per LHS sample: type-sp...
+-----------------
+CELL 13 (code):
+import time
+section_3_start = time.time()...
+-----------------
+CELL 14 (code):
+print('Building {len(samples)} HeteroData graphs with type-specific features...')
+t0 = time.time()
+d...
+-----------------
+CELL 15 (code):
+print(f'\n[Section 3] Execution time: {time.time() - section_3_start:.2f} seconds')...
+-----------------
+CELL 16 (markdown):
+## PART 1 · Section 4 — Define & Initialize PI-HGAT
+Heterogeneous Graph Attention Network with physi...
+-----------------
+CELL 17 (code):
+import time
+section_4_start = time.time()...
+-----------------
+CELL 18 (code):
+metadata = baseline_data.metadata()
+print('Edge types:', [f'{s}-[{r}]->{t}' for s,r,t in metadata[1]...
+-----------------
+CELL 19 (code):
+print(f'\n[Section 4] Execution time: {time.time() - section_4_start:.2f} seconds')...
+-----------------
+CELL 20 (markdown):
+## PART 1 · Section 5 — Train PI-HGAT (Adam + LR scheduler + early stopping)
+...
+-----------------
+CELL 21 (code):
+import time
+section_5_start = time.time()...
+-----------------
+CELL 22 (code):
+optimizer = torch.optim.Adam(model.parameters(), lr=TRAIN_PARAMS['lr'],
+                            ...
+-----------------
+CELL 23 (code):
+print(f'\n[Section 5] Execution time: {time.time() - section_5_start:.2f} seconds')...
+-----------------
+CELL 24 (markdown):
+## PART 1 · Section 6 — Baseline Surrogates (XGBoost, ANN/MLP, Linear Regression)
+Same X/Y splits as...
+-----------------
+CELL 25 (code):
+import time
+section_6_start = time.time()...
+-----------------
+CELL 26 (code):
+from sklearn.preprocessing import StandardScaler
+
+Xtr, Ytr = X_flat[idx_train], Y_eui[idx_train].rav...
+-----------------
+CELL 27 (code):
+print(f'\n[Section 6] Execution time: {time.time() - section_6_start:.2f} seconds')...
+-----------------
+CELL 28 (markdown):
+## PART 1 · Section 7 — Evaluation & Benchmark (R2, RMSE, MAE)
+Produces the surrogate comparison tab...
+-----------------
+CELL 29 (code):
+import time
+section_7_start = time.time()...
+-----------------
+CELL 30 (code):
+def metrics(yt, yp):
+    return dict(R2=r2_score(yt, yp),
+                RMSE=mean_squared_error(yt...
+-----------------
+CELL 31 (code):
+print(f'\n[Section 7] Execution time: {time.time() - section_7_start:.2f} seconds')...
+-----------------
+CELL 32 (markdown):
+## PART 1 · Section 8 — Visualization: Prediction Performance
+Produces **Fig. 5** (actual vs predict...
+-----------------
+CELL 33 (code):
+import time
+section_8_start = time.time()...
+-----------------
+CELL 34 (markdown):
+> ### 📊 FIGURE SLOT — **Fig. 3 · Predicted vs Actual (4 panels)** *(PART 1)*
+> 4 panel PI-HGAT ★ / X...
+-----------------
+CELL 35 (code):
+# FIGURE 5, 6, 7
+from scripts.analysis.fig_style import apply_style, savefig, MODEL_COLORS
+import ma...
+-----------------
+CELL 36 (code):
+# --- EXTERNAL TEST SET PREDICTION ---
+print('\n--- Evaluating on External Test Set (Seed 2810) ---'...
+-----------------
+CELL 37 (code):
+print(f'\n[Section 8] Execution time: {time.time() - section_8_start:.2f} seconds')...
+-----------------
+CELL 38 (markdown):
+## PART 2 · Section 9 — NSGA-III Problem Definition (f1 EUI | f2 LCC | f3 LCE)
+f1 = PI-HGAT surrogat...
+-----------------
+CELL 39 (code):
+import time
+section_9_start = time.time()...
+-----------------
+CELL 40 (code):
+from pymoo.core.problem import ElementwiseProblem
+from pi_hgat.objectives import ObjectiveCalculator...
+-----------------
+CELL 41 (markdown):
+> ### 📊 FIGURE SLOT — **Fig. 6 · Component lifespans vs 20-yr study period** *(PART 2, setup)*
+> Bar...
+-----------------
+CELL 42 (code):
+# FIGURE 3 & 4
+from scripts.analysis.fig_style import apply_style, savefig, LCA_COLORS
+import matplo...
+-----------------
+CELL 43 (code):
+print(f'\n[Section 9] Execution time: {time.time() - section_9_start:.2f} seconds')...
+-----------------
+CELL 44 (markdown):
+## PART 2 · Section 10 — Run NSGA-III
+Produces the Pareto front (**Fig. 6** evolution, **Fig. 7** pa...
+-----------------
+CELL 45 (code):
+import time
+section_10_start = time.time()...
+-----------------
+CELL 46 (code):
+from pymoo.algorithms.moo.nsga3 import NSGA3
+from pymoo.optimize import minimize
+from pymoo.util.ref...
+-----------------
+CELL 47 (markdown):
+> ### 📊 FIGURE SLOT — **Fig. 8 · Pareto front + convergence** *(PART 2)*
+> (a) 3D Pareto (EUI–LCC–LC...
+-----------------
+CELL 48 (code):
+# FIGURE 8
+from scripts.analysis.fig_style import apply_style, savefig, seq_cmap
+import matplotlib.p...
+-----------------
+CELL 49 (code):
+print(f'\n[Section 10] Execution time: {time.time() - section_10_start:.2f} seconds')...
+-----------------
+CELL 50 (markdown):
+## PART 2 · Section 11 — Entropy-TOPSIS Ranking & Pareto Visualization
+Entropy-weighted TOPSIS close...
+-----------------
+CELL 51 (code):
+import time
+section_11_start = time.time()...
+-----------------
+CELL 52 (code):
+from scipy.stats import entropy
+import pandas as pd
+import os
+
+F = res.F
+
+# --- Entropy-TOPSIS ---
+#...
+-----------------
+CELL 53 (markdown):
+> ### 📊 FIGURE SLOT — **Fig. 9 · Pairwise Pareto colored by TOPSIS** *(PART 2)*
+> 3 panel EUI–LCC / ...
+-----------------
+CELL 54 (code):
+# FIGURE 9, 10, 11
+from scripts.analysis.fig_style import apply_style, savefig, seq_cmap
+import matp...
+-----------------
+CELL 55 (code):
+print(f'\n[Section 11] Execution time: {time.time() - section_11_start:.2f} seconds')...
+-----------------
+CELL 56 (markdown):
+## PART 3 · Section 12 — Spatial Explainability (GNNExplainer)
+Explains the recommended retrofit pac...
+-----------------
+CELL 57 (code):
+import time
+section_12_start = time.time()...
+-----------------
+CELL 58 (code):
+from torch_geometric.explain import Explainer, GNNExplainer
+import networkx as nx
+
+# Prepare data us...
+-----------------
+CELL 59 (markdown):
+> ### 📊 FIGURE SLOT — **Fig. 12 · Global feature importance per node type** *(PART 3)*
+> Barh mask s...
+-----------------
+CELL 60 (code):
+# FIGURE 12, 13, 14
+from scripts.analysis.fig_style import apply_style, savefig
+import matplotlib.py...
+-----------------
+CELL 61 (code):
+print(f'\n[Section 12] Execution time: {time.time() - section_12_start:.2f} seconds')...
+-----------------

@@ -1,0 +1,2610 @@
+
+================================================================================
+PAGE 1
+================================================================================
+Integrated life cycle assessment and multi-objective optimization of 
+residential building renovation strategies to achieve NZEB standards
+Dˇzana Kadri´c a, Amar Aganovi´c b,*, Sanita Dˇzino a, Una Smailbegovi´c c, Ajdin Vatreˇs a,  
+Edin Kadri´c a
+a University of Sarajevo, Faculty of Mechanical Engineering, Bosnia and Herzegovina
+b Department of Automation and Process Engineering, The Arctic University of Tromsø, Norway
+c Chair of Corporate Sustainability and Environmental Management, Faculty of Business Administration, TU Bergakademie Freiberg, Germany
+A R T I C L E  I N F O
+Keywords:
+Nearly-zero energy buildings (NZEB)
+Building renovation
+Life cycle emissions (LCE)
+Life cycle costs (LCC)
+Definitive screening design (DSD)
+Multi-objective optimization (MOO)
+A B S T R A C T
+Renovation of existing buildings to meet Nearly Zero Energy Building (NZEB) standards is essential for reducing 
+energy consumption and CO2 emissions in the residential sector, making it a central strategy for achieving na­
+tional climate goals. While commonly applied renovation measures effectively reduce operational energy con­
+sumption and CO2 emissions, they may increase the building’s environmental impact due to embodied emissions 
+from construction materials and equipment. To address these opposing effects, this study employs a life cycle- 
+oriented multi-objective optimization (MOO) approach to identify optimal renovation strategies for a repre­
+sentative collective residential building. A Definitive Screening Design (DSD) is used to create a minimal 
+simulation experiment, and regression analysis is applied to develop surrogate models that define the relation­
+ships between primary energy consumption (PE), life cycle emissions (LCE), life cycle cost (LCC), and the 
+considered renovation measures. These surrogate models are integrated into the MOO model, which is optimized 
+using the NSGA-III algorithm to simultaneously minimize PE, LCE, and LCC. The resulting Pareto-optimal so­
+lutions reveal distinct trade-offs, characterized by a non-linear positive relationship between PE and LCE, a linear 
+negative relationship between PE and LCC, and a non-linear negative relationship between LCE and LCC. These 
+relationships indicate that improvements in energy and environmental performance are associated with signif­
+icant cost increases. To evaluate and rank the Pareto-optimal solutions, the hybrid Entropy-TOPSIS method is 
+applied, resulting in the selection of an optimal renovation strategy with its corresponding set of renovation 
+measures. The proposed methodology provides an efficient decision-support approach for renovating collective 
+residential buildings following NZEB standards.
+1. Introduction
+The transition towards Nearly-Zero Energy Buildings (NZEB) is a key 
+strategy for addressing global climate change and accelerating national 
+energy transitions [1]. An NZEB is a building with very high energy 
+performance, where a significant portion of its energy demand is sup­
+plied by renewable sources [2]. To qualify a building as NZEB, national 
+regulations are needed, outlining specific requirements for new and 
+existing buildings, reflecting specific national, regional, or local condi­
+tions. Common metrics for NZEB, include total, non-renewable or 
+renewable primary energy (PE) expressed in kWh/(m2a) defined for 
+different building categories [3,4]. In most cases, PE accounts for the 
+energy consumption associated with heating, domestic hot water 
+(DHW), ventilation, and cooling. However, extending the scope of this 
+indicator to include the energy consumption of lighting and household 
+appliances ensures a more comprehensive assessment of total energy 
+demand, carbon footprint, and building environmental impact, leading 
+to more optimal and sustainable renovation strategies [3]. Following, 
+additional metrics are U values of building envelope, and CO2 emissions 
+[3]. The European Union (EU) member states mandate that all new 
+public buildings will comply with more stringent ZEB standards by 
+2028, and all other building categories by 2030 [5], while existing 
+buildings are subject to progressive renovation requirements aligned 
+with long-term climate neutrality targets. This legislative pathway is 
+designed to accelerate the transition toward a highly energy-efficient 
+and decarbonized building stock, aiming to reduce PE consumption to 
+16% by 2030 and to 20–22% by 2035, with at least 55% of this reduction 
+* Corresponding author at: Faculty of Engineering Science and Technology, UiT Norges arktiske universitet, Postboks 6050, Langnes 9037 Tromsø, Norway.
+E-mail address: amar.aganovic@uit.no (A. Aganovi´c). 
+Contents lists available at ScienceDirect
+Energy & Buildings
+journal homepage: www.elsevier.com/locate/enb
+https://doi.org/10.1016/j.enbuild.2026.117068
+Received 13 October 2025; Received in revised form 29 December 2025; Accepted 25 January 2026  
+Energy & Buildings 356 (2026) 117068 
+Available online 26 January 2026 
+0378-7788/© 2026 The Author(s). Published by Elsevier B.V. This is an open access article under the CC BY license ( http://creativecommons.org/licenses/by/4.0/ ). 
+
+================================================================================
+PAGE 2
+================================================================================
+to be achieved through the renovation of existing residential buildings 
+[5]. Therefore, renovation of buildings to NZEB requirements is a key 
+incentive of the EU energy efficiency framework, resulting in optimized 
+building energy performance and providing a more environmentally 
+sustainable approach than a new construction [6].
+Most frequently used renovation scenario for residential buildings 
+includes implementation of passive measures, aimed to improve the heat 
+transfer coefficients of the building envelope and reduce infiltration, 
+consequently minimizing overall energy consumption [7]. These mea­
+sures include the use of high-performance thermal insulation, multi- 
+glazed windows filled with inert gases such as argon, as well as the 
+implementation of green roofs and external shading systems [8,9,10]. 
+Passive renovation measures are considered as very effective strategies 
+for reducing building energy consumption [11,12], with thermal insu­
+lation reducing heating demand by 40–60% [12], and window 
+replacement offering energy savings ranging from 23% in Mediterra­
+nean climates to up to 77% in heating-dominated regions [13,14]. 
+Active renovation measures are focused on the modernization of tech­
+nical systems, including heating, DHW, cooling, and lighting. These 
+measures typically integrate high-efficiency technologies and equip­
+ment into the building technical system, including heat pumps, 
+condensing boilers, Light-Emitting Diode (LED) lighting, and advanced 
+building automation systems, to enhance energy performance and 
+minimize energy consumption, with a potential energy savings of up to 
+80% [11]. Integration of renewable energy into the building energy 
+supply system significantly reduces PE consumption and CO2 emissions. 
+The most implemented technologies include photovoltaic (PV) systems 
+for on-site electricity generation, solar thermal panels for DHW, and, in 
+recent applications, wind turbines [8]. Generally, installing PV systems 
+on building roofs can lead to savings of total energy consumption 
+ranging from 55% in apartments to 80% in single-family houses [15]. 
+Moreover, when PV systems are combined with other building renova­
+tion measures, total energy consumption in residential buildings can be 
+reduced by more than 90% [16,17].
+Implementation of renovation measures and scenarios reduces 
+operational energy consumption and CO2 emissions but can 
+consequently increase the building’s overall environmental impact due 
+to the embodied emissions associated with the materials and equipment 
+used in the renovation process, building maintenance, as well as end-of- 
+life demolition and disposal activities. This effect is particularly signif­
+icant in cases of high renovation rates, which can lead to increased 
+upfront GHG emissions if embodied emissions from materials and pro­
+cesses are not adequately accounted [18]. To assess the environmental 
+impacts of materials, equipment, and related processes throughout a 
+building’s life-cycle, Life Cycle Assessment (LCA) is widely employed as 
+a standardized analytical tool. The general framework for conducting 
+LCA, as defined by ISO 14040:2006 and ISO 14044:2006, includes the 
+following key phases: definition of objective and scope, life cycle in­
+ventory analysis, impact assessment, and interpretation. System 
+boundaries at the building level, are categorizing in four main stages of 
+LCA: production (modules A1–A3), construction (modules A4–A5), use 
+(modules B1–B7) and end-of-life stage (modules C1–C4), encompassing 
+all life cycle emissions (LCE). The contribution of individual life-cycle 
+modules to a building’s total environmental impact can vary signifi­
+cantly, depending on the applied renovation measures, energy-saving 
+potential, selected materials, climatic conditions, and the service life 
+of both the building and its components. In colder climates, and building 
+with high energy-saving potential, the operational energy use module 
+(B6) can account for up to 90% of the building’s total life-cycle envi­
+ronmental impact [19,20]. According to [21], 75% of impacts originate 
+from the operational energy use module (B6), 10% from material pro­
+duction (A1–A3), another 10% from components replacement (B4), and 
+the remaining 5% from other modules (A4-A5, C1–C4). Although repair 
+(B2) and replacement (B4) contribute minimally to life-cycle emissions, 
+they often represent a considerable portion of overall life-cycle costs 
+(LCC) [20]. Most studies, related to building renovations focus mainly 
+on modules A1-A3, A4-A5, and B6, while other modules related to 
+maintenance, replacement, repair, deconstruction, disposal, and reuse 
+are often omitted [7].
+Reducing energy consumption and CO2 emissions is a primary 
+objective of building renovation, particularly in the context of achieving 
+national energy transition goals. However, achieving high energy and 
+Nomenclature
+AM
+Set of all CO2 emitting activity data for materials and 
+equipment
+AO
+Set of all CO2 emitting activity data of operational use
+AM,t
+Subset of all CO2 emitting activity data for materials and 
+equipment in period t
+AO,t
+Subset of all CO2 emitting activity data of operational use 
+in period t
+am∊AM
+Carbon emitting activity for material and equipment
+ao∊AO
+Carbon emitting activity of operational use
+BPS
+Building performance simulation
+d
+Discount rate
+dh
+District heating renovation measure
+dhw
+Domestic hot water production end-use category
+E
+Set of all energy end-use categories
+e∊E
+Energy end-use category
+FE
+Final energy consumption
+fp,e
+Primary energy factor for end-use category ∀e ∈E
+fM,t,am
+Emission factor for material and equipment ∀t ∈T,
+∀am∊AM
+fO,t,ao
+Emission factor of operational use ∀t ∈T, ∀am∊AO
+h
+Heating end-use category
+IC
+Investment costs
+ICm
+Investment cost of measure m,∀m∊M
+iIC
+Investment cost inflation rate
+iMC
+Maintenance cost inflation rate
+iOC
+Operational cost inflation rate
+LCC
+Life Cycle Cost
+LCE
+Life Cycle Emissions
+M
+Set of all renovation measures
+Ms∀s∊S
+Set of all renovation measures used in scenario s
+MC
+Maintenance costs
+m∊M
+Renovation measure
+OC
+Operational costs
+PE
+Primary energy consumption
+p
+Percentage of investment needed for maintenance
+pc
+Fixed price of district heating system use
+pdh
+Price of energy supplied from district heating
+pel
+Price of electricity
+Qnd,e
+Energy need for end-use category ∀e ∈E
+S
+Set of all possible renovation scenarios
+s∊S
+Renovation scenario
+T
+Set of all periods
+Tm∀m∊M Set of all renovation periods of a given measure m
+t∊T
+Current period
+ηe
+Efficiency of the energy system used for end-use category 
+∀e ∈E
+ηh
+Efficiency of the heating system
+ηdhw
+Efficiency of the domestic hot water preparation system
+σe
+Switch variable for end-use category ∀e ∈E
+σh
+Switch variable in the case of district heating
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+2 
+
+================================================================================
+PAGE 3
+================================================================================
+environmental performance at minimal investment cost is essential to 
+support informed decision-making and ensure the practical feasibility 
+and scalability of renovation measures [12]. In some cases, large-scale or 
+deep renovation strategies often require substantial upfront in­
+vestments, where such investments may not always be economically 
+feasible, as the resulting reductions in energy or fuel consumption do not 
+sufficiently decrease operational energy costs to offset associated in­
+vestments [22]. Therefore, in addition to minimizing primary energy 
+consumption and environmental impacts through LCE, it is essential to 
+ensure the economic effectiveness of the renovation process by mini­
+mizing LCC, thereby supporting its long-term sustainability from both 
+environmental and economic perspectives.
+To simultaneously address multiple performance criteria and iden­
+tify balanced and efficient building retrofit solutions, multi-objective 
+optimization (MOO) algorithms are frequently employed. Kamazani 
+et al. (2025) [23] optimized building orientation, window-to-wall ratio, 
+and material selection for walls, roofs, and floors in an office building. 
+Similarly, Benaddi et al. (2024) [24] applied MOO to classroom build­
+ings to minimize LCC, LCE and thermal discomfort time, optimizing 
+glazing type, window-to-wall ratio and shading. According to Alexakis 
+et al (2025), operational energy and renovation cost remain the most 
+frequently optimized objectives [25]. Research that involves life cycle 
+emissions typically limits the analysis to operational emissions (B6), as 
+seen in recent studies [26,27,28]. Other studies extend the system 
+boundary to include material production (A1–A3) and replacements 
+(B4), such as the study by Arbulu et al. (2023) [29]. However, there still 
+exists lack of comprehensive LCA of renovation measures for existing 
+buildings. Kamazani et al. (2025) optimized an NZEB office building 
+using a two-phase procedure, beginning with an energy-centric step and 
+followed by a carbon-centric step [23]. This two-step design, however, 
+restricts a fully integrated assessment of the interactions between energy 
+and carbon objectives.
+Among the various MOO algorithms proposed in the literature, 
+evolutionary algorithms have been particularly effective in optimization 
+of complex, non-linear building energy or renovation problems. While 
+numerous MOO techniques exist, evolutionary algorithms are especially 
+well suited for high-dimensional, non-linear problems with conflicting 
+objectives. Their effectiveness in solving optimization problems with 
+conflicting objectives without requiring gradient information makes 
+them suitable for such applications. Within this class of methods, the 
+Non-Dominated Sorting Genetic Algorithm II (NSGA-II) is one of the 
+most widely used MOO methods [25]. While NSGA-II produces solutions 
+comparable to those of other optimization algorithms, the more robust 
+NSGA-III has demonstrated improved optimization performance [25]. 
+Alexakis et al. (2025) recommend a more frequent use of the NSGA-III 
+algorithm to exploit its favorable characteristics for complex multi- 
+objective problems [25]. Razmi at al. (2022) compared NSGA-II and 
+NSGA-III in the multi-objective optimization of energy efficiency, ther­
+mal comfort, and useful daylight illuminance in dormitory building 
+design [30]. The results indicated that, despite slower initial conver­
+gence, NSGA-III showed better overall performance than NSGA-II by the 
+end of the optimization process. A recent study by Shi and Chen (2024) 
+demonstrated the efficiency of NSGA-III in an energy-saving renovation 
+framework for hospital buildings, optimizing energy consumption, 
+renovation costs, and thermal comfort simultaneously [31]. By 
+comparing NSGA-II, NSGA-III, and a decomposition-based multi-objec­
+tive evolutionary algorithm, Chen et al. (2022) demonstrated that 
+NSGA-III provides the most efficient optimization performance for 
+building applications [32].
+Given the complexity of evaluating objective functions, MOO models 
+often utilize surrogate models (SM), which enable significantly faster 
+and more efficient assessment of building performance while incorpo­
+rating the building’s physical model [33]. SM are simplified statistical or 
+mathematical approximations of complex building simulation models, 
+trained on a limited number of building performance simulations (BPS), 
+which describe the functional relationship between design variables or 
+building characteristics (inputs) and key performance indicators (out­
+puts) [34]. Various types of SM have been proposed in the literature, 
+ranging from polynomial [12,35] and multiple linear regression (MLR) 
+[36] to artificial neural networks [31]. To generate the training dataset, 
+several experimental design approaches are commonly employed, 
+including design of experiments (DOE) techniques and Monte Carlo- 
+based methods [34]. The number of BPS required to train a surrogate 
+model can be significantly reduced by using an appropriate experi­
+mental design approach [31]. For instance, a full factorial design (FFD) 
+was successfully used to model final energy for heating and CO2 emis­
+sions [12], while the response surface methodology was effective at 
+modeling building energy consumption [35]. While the proposed DOE 
+techniques have proven to be both reliable and effective, there remains 
+considerable potential for employing more efficient experimental de­
+signs, particularly in scenarios involving a large number of design var­
+iables. In this context, the Definitive Screening Design (DSD) represents 
+a promising alternative, having demonstrated efficiency and robustness 
+in achieving high predictive accuracy with a significantly reduced 
+number of experiments [37,38]. Therefore, DSD presents a suitable 
+option for the development of SM aimed at optimizing building reno­
+vation strategies.
+MOO algorithms generate a Pareto front of non-dominated solutions 
+that are not always practical for decision-making. Therefore, an addi­
+tional selection process is required to identify the most suitable solution, 
+typically involving Multi-Criteria Decision Analysis (MCDA) methods to 
+rank and select the best solution from the Pareto front [26 19 39].
+1.1. Research gaps and study contributions
+The renovation of existing buildings to comply with NZEB standards 
+has become an increasingly important research topic, as evidenced by 
+the substantial growth in published studies in recent years [11,40]. 
+Nevertheless, several important gaps remain in the literature, including 
+the following: 
+⋅ First, most renovation studies assess either energy performance, LCE 
+[41], or LCC, while only a limited number of studies simultaneously 
+integrate all three aspects in determining compliance with NZEB 
+standards [25].
+⋅ Second, LCE assessments mainly focus on the material production 
+stage (A1-A3) and operational emissions (B6), while phases such as 
+maintenance, repair, replacement, and end-of-life treatment are 
+often omitted [7]. This limited scope may lead to an underestimation 
+of the total environmental impact and result in renovation strategies 
+that seem effective in the short term but fail to provide sustainable 
+performance throughout the building’s life cycle.
+⋅ Third, previous studies show that LCE and LCC are rarely applied 
+simultaneously within the same renovation study. While approxi­
+mately 38% of renovation studies include LCE, only a much smaller 
+share (around 16%) includes LCC analysis [25], indicating that 
+economic sustainability is not consistently addressed in long-term 
+renovation decision-making.
+⋅ Fourth, NZEB evaluations for residential sector are typically based on 
+operational PE, commonly considering only heating and/or DHW, 
+while only a limited number of studies consider appliances and 
+lighting, even though excluding these end-uses can significantly 
+underestimate total energy consumption [28]. Fifth, analyzed 
+building is located in a continental climate zone, classified as Dfb 
+according to the K¨oppen climate classification, characterized by cold 
+winters and warm summers [42]. Despite being one of the most 
+prevalent climate zones in Central Europe, Dfb is among the least 
+studied in the context of building renovation optimization research 
+[34].
+⋅ Sixth, DSD is used to design the simulation experiment, enabling 
+efficient exploration of the design space with a significantly reduced 
+number of simulations. Seven input variables (5 continuous and 2 
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+3 
+
+================================================================================
+PAGE 4
+================================================================================
+categorical), representing renovation measures, are combined into 
+renovation scenarios assessed across three objective functions (PE, 
+LCE, and LCC). This approach, which requires only 18 simulations, 
+uses substantially fewer runs than other common experimental de­
+signs. For comparison, a full factorial design (FFD) would require 
+972 simulations, a central composite design (CCD) 172, and a 
+Box–Behnken design (BBD) 164. While FFD, CCD and BBD allow for 
+the estimation of all two-factor interactions and all quadratic effects, 
+this is rarely necessary, as often only a small subgroup of terms is 
+sufficient to meaningfully estimate the objective function [43]. 
+Methods specifically designed to reduce computational complexity, 
+such as DSD, remain underexplored in the context of NZEB renova­
+tion [29].
+⋅ Finally, the selection of an optimal renovation scenario is usually 
+based on MCDA approaches that do not integrate objective weighting 
+methods, limiting transparency and objectivity in decision-making 
+[44].
+To address these gaps, this study introduces several contributions to 
+the optimization of renovation strategies for existing residential build­
+ings to meet NZEB standards. The analysis considers seven renovation 
+measures, including passive and active measures, as well as the inte­
+gration of renewable energy sources: 
+⋅ A comprehensive LCE system boundary is determined, covering the 
+majority of life cycle stages, including those usually excluded in 
+literature (construction (A4-A5), use (B1-B5) and end-of-life (C1-C4) 
+stages).
+⋅ LCC is systematically assessed over the entire building lifetime, 
+directly addressing the underrepresentation of long-term economic 
+sustainability in existing renovation studies.
+⋅ The modeled non-renewable PE includes heating, cooling, DHW, 
+lighting, and appliances energy consumption, reduced by the elec­
+tricity produced from an on-site renewable energy system. This in­
+dicator represents building energy performance and compliance with 
+NZEB standards following renovation.
+⋅ By focusing on a building located in a Dfb continental climate, this 
+study provides optimization results that address the limited repre­
+sentation of this prevalent Central European climate zone in existing 
+building renovation optimization studies, with findings transferable 
+to similar buildings in comparable climatic conditions.
+⋅The DSD is applied for the first time in building renovation optimi­
+zation context to design experiments and develop SM. Compared 
+with conventional experimental designs, including FFD and RSM 
+designs, 
+this 
+approach 
+significantly 
+reduces 
+computational 
+complexity and associated costs, with SM achieving high predictive 
+accuracy.
+⋅ A simultaneous optimization of PE, LCE, and LCC is performed using 
+the state-of-the-art NSGA-III evolutionary algorithm, resulting in a 
+set of Pareto-optimal solutions [30].
+⋅ Pareto-optimal solutions are evaluated and ranked using transparent 
+and objective hybrid Entropy- TOPSIS method, with the optimal 
+renovation scenario selected as the highest-ranked solution with its 
+corresponding set of renovation measures.
+The remainder of the paper is organized as follows: Section 2 pre­
+sents the study methodology, including the building and renovation 
+measures characteristics, the methodology for calculating single- 
+objective functions (PE, LCE, and LCC), a description of DSD and the 
+conducted simulation experiments, the objective-function definition, 
+and the multi-objective optimization framework. Section 3 presents the 
+results of multi-objective optimization and the post-hoc ranking of 
+Pareto-optimal solutions. Section 4 discusses the key findings, their 
+implications on renovation strategy, and addresses the limitations of the 
+study. Finally, in Section 5 the main conclusions of the study are 
+presented.
+2. Methodology
+2.1. General overview
+A brief overview of the methodology employed in this study is pre­
+sented in Fig. 1. This study employs MOO to minimize operational non- 
+renewable PE consumption, LCE, and LCC in the renovation of repre­
+sentative residential building to NZEB standards.
+The building performance analysis is conducted on a representative 
+building from the building block category, as defined in the National 
+Building Typology Matrix (TABULA). The impact of seven renovation 
+measures is evaluated, including installation of external wall and roof 
+insulation, window replacement, lighting system replacement, installa­
+tion of PV panels on the flat roof, shading installation, and replacement 
+of the heating and DHW systems. These measures form the basis of a 
+parametric study designed to assess their individual and combined ef­
+fects on the overall building performance. DSD methodology is used to 
+design a simulation experiment and a simulation matrix, in which each 
+row represents a unique renovation scenario consisting of a specific 
+combination of renovation measures. The DSD methodology is selected 
+as it provides efficient exploration of the design space with a minimal 
+number of required simulations, while still allowing for the estimation of 
+the main, quadratic, and selected interaction terms. BPS are performed 
+using DesignBuilder software, in which the representative building was 
+modeled. The modelled energy consumption was subsequently validated 
+using real operational energy data. Building performances, including PE 
+and operational CO2 emissions, are estimated using the integrated 
+EnergyPlus simulation engine, for renovation scenarios given in the 
+simulation matrix. The calculation of LCE of selected materials and 
+equipment is performed using Umberto software in combination with 
+the Ecoinvent 3.9.1 database. For each renovation scenario, the LCC was 
+calculated for the investment costs of renovation measures, as well as 
+operational and maintenance costs over the assumed building lifetime.
+Integration of the simulation matrix with corresponding simulated 
+objective functions forms the dataset used for the development of single- 
+objective functions’ models (SM). For each objective function, which 
+defines the relationship between design variables and building perfor­
+mance indicators, a regression model is developed using multiple-linear 
+regression (MLR) analysis. These models enable fast evaluation of 
+various renovation scenarios without the need for repeated building 
+performance simulations.
+Determining the optimal renovation scenario requires the simulta­
+neous optimization of all three single-objective functions, i.e., PE, LCE, 
+and LCC. This is achieved by MOO using the NSGA-III algorithm, which 
+generates a Pareto-optimal set of non-dominated renovation scenarios. 
+However, for practical decision-making, selecting a subset of solutions is 
+essential. One such approach involves MCDM methods to rank Pareto- 
+optimal solutions based on predefined criteria. Among these, the TOP­
+SIS method is applied to evaluate and rank solutions according to their 
+proximity to an ideal scenario, considering the relative importance of 
+each objective function. The final ranked list of renovation scenarios can 
+help decision-makers in selecting the most suitable renovation scenario 
+based on predefined objectives and priorities.
+2.2. Building
+The building selected for the analysis, identified within the national 
+Building Typology Matrix under the building block category, was con­
+structed between 1961 and 1970 as part of the region’s large-scale 
+residential developments, typical for the socialist-era urban planning. 
+This period was characterized by the extensive construction of ratio­
+nalized and standardized collective residential buildings, primarily 
+aimed at providing mass housing solutions through cost-effective, 
+industrialized construction techniques. Architecturally, the building 
+follows a simple, elongated rectangular layout with a flat roof, reflecting 
+the principles of socialist-era housing design (Fig. 2.a). The building 
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+4 
+
+================================================================================
+PAGE 5
+================================================================================
+form factor (ratio of building envelope and its volume) is 0.48, indi­
+cating a relatively compact structure with moderate heat exchange po­
+tential. The building layout consists of a basement, ground floor, and 
+five additional floors, with a heated usable floor area of 2620 m2. The 
+structural system is massive, incorporating horizontal reinforced con­
+crete ring beams. The external walls consist of two external wall types, 
+with cast concrete thicknesses of 18 cm for walls oriented to the north 
+and south and 25 cm for walls oriented to the east and west, all finished 
+with plaster. The basement walls are constructed of 20 cm concrete. An 
+uninsulated external envelope results in significant thermal losses. The 
+flat roof is covered with gravel and 1 cm of thermal insulation, providing 
+minimal thermal protection. Since its initial construction, the building 
+underwent a partial renovation limited to window replacement, while 
+no thermal insulation has been applied to the external walls or roof. 
+Windows have been upgraded to double-glazed Polyvinyl Chloride 
+(PVC) frames, resulting in a marginal improvement in the building’s 
+thermal performance; however, this remains insufficient to meet current 
+energy performance standards. Thermal imaging analysis of the building 
+(Fig. 2.b) confirms substantial heat loss, with high temperature readings 
+on external walls due to the lack of thermal insulation. Additionally, 
+thermal bridges are evident around reinforced concrete ring beams and 
+window arches, highlighting the need for the implementation of reno­
+vation measures.
+The typical heating system for this category of buildings is a district 
+heating (DH) system using natural gas as the primary energy source. 
+Heat is generated in a central boiler house and delivered through the 
+distribution network to a building-level heating substation. The sub­
+station is equipped with a plate heat exchanger with a nominal thermal 
+capacity of 293 kW, supplying hot water to the internal space-heating 
+system. Heat is delivered to apartments via water-based radiator sys­
+tems, operating under a conventional heating regime of 90/70 ◦C 
+(supply/return). DHW preparation is provided by individual electric 
+boilers installed at the apartments. Cooling is provided by individual 
+split air-conditioning units installed in apartments. These systems are 
+typically air-to-air units with an average coefficient of performance 
+(COP) of approximately 3.0, reflecting standard efficiency levels of 
+residential cooling equipment. The existing lighting system predomi­
+nantly consists of low-efficiency technologies, namely incandescent 
+lamps (12–18 lm/W) and compact fluorescent lamps (45–60 lm/W), 
+which are significantly less efficient than modern lighting systems. For 
+Fig. 1. Research methodology.
+Fig. 2. (a) Visual, (b) thermal, and (c) simulation-based building models.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+5 
+
+================================================================================
+PAGE 6
+================================================================================
+modelling purposes, the lighting system is represented using installed 
+lighting power data, corresponding to a low-efficiency lighting standard 
+with a lighting power density of 5.0 W/m2, reflecting the absence of 
+modern lighting regulations and limited use of LED technology.
+2.3. Renovation measures and scenarios
+Considered renovation measures include the installation of external 
+wall insulation (x1), windows replacement (x2), roof insulation (x3), 
+lighting system replacement (x4), installation of PV panels on the flat 
+roof (x5), installation of shading (x6), as well as heating and DHW sys­
+tem replacement (x7). Table 1 presents the renovation measures and 
+their corresponding levels: renovation level −1 represents the baseline, 
+reflecting the current state of the building, renovation level 0 represents 
+the intermediate renovation level, and renovation level + 1 indicates the 
+highest level of renovation considered for each measure.
+External wall insulation (x1) involves the installation of stone wool 
+with two insulation thicknesses, 10 cm for renovation level 0, and 20 cm 
+for renovation level + 1. Corresponding U-values for external walls with 
+different cast concrete thicknesses range from 1.86-2.23 W/(m2K) in the 
+current state (renovation level −1) to 0.172–0.175 W/(m2K) at the level 
++ 1, significantly improving the building envelope thermal perfor­
+mance. Windows replacement (x2) aims to enhance window energy 
+performance by upgrading the glazing type and heat transfer coefficient. 
+The options include double glazing with low-emissivity (low-e) coating 
+and argon fill for renovation level 0, and triple glazing with low-e and 
+argon fill for renovation level + 1. These upgrades will reduce glass and 
+window thermal transmittance, improve solar heat gain coefficient, and 
+reduce infiltration. Roof insulation (x3) involves the installation of stone 
+wool with two insulation thicknesses, 10 cm for renovation level 0, and 
+20 cm for renovation level + 1. Corresponding U-values range from 1.04 
+W/(m2K) in the current state –1, to 0.15 W/(m2K) at the + 1, resulting in 
+a reduction of heat loss through the roof. Lighting system replacement 
+(x4) involves upgrading the existing low-efficiency lighting technolo­
+gies, characterized by an installed lighting power density of 5.0 W/m2 
+and the absence of lighting regulations. The renovation scenarios 
+introduce two improved performance levels. The renovation level 
+0 corresponds to compliance with a general energy code and linear 
+lighting control, reducing the lighting power density to 3.75 W/m2. This 
+level represents the installation of basic LED lighting systems with on/ 
+off or linear dimming control. The renovation level + 1 considers 
+advanced LED lighting systems with linear control, achieving a further 
+reduction in lighting power density to 2.5 W/m2. This level represents 
+the installation of high-efficiency LED luminaires, such as LED panels or 
+linear LED luminaires combined with continuous dimming control. At 
+renovation levels 0 and + 1, the installed lighting power is reduced due 
+to the installation of high-efficiency luminaires combined with control 
+strategies, resulting in lower electricity consumption for lighting. PV 
+panels installation (x5) involves the installation of on-site renewable 
+energy generation system on the building roof, contributing to lowering 
+dependency from electric grid. Two levels of active surface area and 
+corresponding PV capacity are analyzed: active surface area of 84.1 m2, 
+corresponding to 15 kW for renovation level 0, and active surface area of 
+168.2 m2, corresponding to 30 kW for renovation level + 1. Shading 
+installation (x6) considers the addition of external shading devices, 
+micro-louvre systems (renovation level + 1), which are expected to 
+decrease building cooling loads. Heating and DHW system improvement 
+(x7) considers replacement of natural-gas-based DH system for space 
+heating and individual electric boilers for DHW, with a centralized air- 
+to-water heat pump system supplying both space heating and DHW. 
+Following envelope renovation, the existing radiator-based distribution 
+system is retained, while the supply and return temperatures are 
+reduced in accordance with the decreased heating demand. The heating 
+and DHW systems are fully centralized and integrated into a single high 
+efficiency system, with the installed heat pump capacity adapted to the 
+reduced building loads, enabling capacity modulation and improved 
+performance. The heat pump system is characterized by a seasonal co­
+efficient of performance (COP) of 3.0, representing a conservative 
+assumption for modeling purposes under reduced operational temper­
+ature of distribution system and local climatic conditions [45].
+2.4. Definitive screening design
+BPS, based on fundamental physical laws, can accurately quantify 
+the impact of numerous design variables (renovation measures) on 
+operational energy use, as well as on indoor environmental conditions 
+and HVAC system performance. Even though BPS provides detailed re­
+sults, the computational cost becomes significant when a large number 
+of simulations is required for optimization. In addition, BPS outputs are 
+usually limited to operational indicators, and in multi-objective opti­
+mization, other objective functions, such as PE, LCE, and LCC, cannot be 
+obtained directly from BPS and must be derived through additional 
+models or simulations. For example, PE, LCE, and LCC are calculated 
+using models that combine BPS-based operational energy use with fuel- 
+and electricity-specific conversion factors to derive PE, with embodied 
+emissions data to determine LCE, and with capital, maintenance, and 
+replacement cost data to determine LCC over the building’s life cycle. In 
+the context of multi-objective optimization, running many simulations 
+in BPS tools such as EnergyPlus, is highly demanding and computa­
+tionally expensive. As an alternative, the proposed approach is to 
+develop simplified regression models (SM) that relate building perfor­
+mance to the relevant design variables. Using DOE methodology these 
+Table 1 
+Renovation measures and their levels.
+Renovation measure
+Symbol
+Design variable
+Level
+¡1
+0
+1
+External wall insulation, λ = 0.038 
+W/(mK)
+x1
+Insulation thickness, cm
+0
+10
+20
+Windows replacement
+x2
+Heat transfer coefficient, W/ 
+(m2K)
+Double glazing, clear, air- 
+filled
+Double glazing, low-e, Ar filled
+Triple glazing, low-e, Ar 
+filled
+​
+1.60
+1.28
+0.96
+Roof insulation, 
+λ = 0.035 W/(mK)
+x3
+Insulation thickness, cm
+0
+10
+20
+Lighting system replacement
+x4
+Power density, W/m2
+Low standard, No 
+regulation
+General energy code with linear 
+control
+LED with linear control
+​
+5.0
+3.75
+2.5
+PV panels installation
+x5
+Active surface area, m2
+0
+84
+168
+Shading system installation
+x6
+Shading device
+No shading devices
+–
+External shading for 
+summer 
+Micro Louvre
+Heating and DHW system 
+replacement
+x7
+Heating system
+District heating
+–
+Heat Pump 
+(air to water)
+​
+DHW system
+Electric boilers
+–
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+6 
+
+================================================================================
+PAGE 7
+================================================================================
+models can be developed from a minimal subset of the full simulation 
+space, with building physics represented in the models indirectly and 
+approximately, and with a substantially reduced number of required 
+simulations [33,46].
+A class of DOE, known as DSD, was developed to provide small and 
+highly efficient experimental designs that allow robust screening of 
+main effects and estimation of quadratic effects, enabling reliable sur­
+rogate model development and optimization [47,48,49]. DSD uses low, 
+medium, and high factor levels in a structured way to describe the 
+general shape of the response surface without exploring the full design 
+space. A key advantage of DSD is that it can estimate all main effects 
+without confounding and quadratic effects without aliasing with main 
+effects. However, quadratic effects may be partially aliased with two- 
+factor interactions. Two-factor interactions are not fully resolved, but 
+potentially important interactions can still be identified. The main 
+limitation of DSD is aliasing, since higher-order interactions cannot be 
+distinguished and even two-way interactions remain partially corre­
+lated. DSD therefore relies on the sparsity of effects principle, assuming 
+that only a few factors have a dominant influence, and when many 
+factors interact strongly, a DSD cannot represent the system accurately. 
+Under conditions where sparsity of effects is present, DSD performs as a 
+highly efficient response surface design [43].
+Formally, for the case of m continuous factors, DSD experimental 
+matrix can be constructed from an m × m conference matrix C, which 
+satisfies: 
+CʹC = (m −1)I
+(1) 
+where I is an m × m identity matrix, Cii = 0, (i = 1, 2, ⋯, m), and Cij ∈
+{ −1,1},(i ∕= j,i,j = 1,2,⋯,m).
+Using the matrix C, a design matrix D can be formed as follows: 
+D =
+⎛
+⎝
+C
+−C
+0
+⎞
+⎠
+(2) 
+However, the design matrix D is restricted to continuous factors only. By 
+applying the heuristic augmentation procedure proposed in [48], D can 
+be extended to include c two-level categorical factors while preserving 
+nearly all of the favorable properties of the original design. For larger 
+values of c, partial aliasing may occur between main effects and two- 
+factor interactions involving the categorical factors. For an experi­
+mental design with an even total of m +c mixed factor types, the 
+augmented DSD procedure requires only 2(m +c) +2 experimental runs, 
+while for an odd total of m +c mixed factor types it requires 
+2(m +c +1) +2 experimental runs.
+In this study, a DSD was employed to estimate the effects of five 
+continuous and two categorical factors, as defined in Table 1. Based on 
+this design, a total of 18 experimental runs is required, each representing 
+a distinct building renovation scenario. The resulting DSD simulation 
+matrix, together with the corresponding simulated values of PE, LCE, 
+and LCC, is presented in Table 2. Using the generated simulation dataset 
+(Table 2), SM were developed using regression analysis for each of the 
+three single-objective functions (PE, LCE, and LCC). Due to the limited 
+number of simulations in DSD, it is only possible to estimate a subset of 
+effects, depending on the available degrees of freedom. To ensure model 
+accuracy and reliability, precise selection of the most significant terms is 
+essential, which can be achieved using model selection criteria such as 
+the Akaike Information Criterion (AIC) or the Bayesian Information 
+Criterion (BIC). The terms included in the models were determined using 
+the corrected AIC (AICc) [50], ensuring that only statistically significant 
+terms (p < 0.05) were retained such that models’ hierarchy and heredity 
+are preserved.
+All three single-objective functions (surrogate models), representing 
+PE, LCE, and LCC, are modeled as quadratic regression models, given by: 
+y = β0 +
+∑
+k
+i=1
+βixi +
+∑
+k
+i=1
+βiix2
+i +
+∑
+k−1
+i=1
+∑
+k
+j=i+1
+βijxixj + ε
+(3) 
+where y is the response, xi and xj are factors, β0 is the intercept, βi, βii, 
+and βij are coefficients of linear, quadratic, and two-factor interaction 
+terms, respectively, and ε is a normally distributed random error. It is 
+important to note that many of β coefficients are zero by the sparsity of 
+effects assumption.
+2.5. Assessment of building performances
+2.5.1. Primary energy assessment
+To evaluate the impact of renovation scenarios on building energy 
+performance, the analyzed building was modeled in DesignBuilder, with 
+a visual model shown in Fig. 2.c. DesignBuilder with the EnergyPlus 
+simulation engine was selected due to its proven accuracy, flexibility, 
+and widespread use in building energy performance analysis [25]. As 
+the most widely used dynamic simulation engine, EnergyPlus is 
+preferred in over 90% of studies involving multicriteria analysis and 
+optimization of building renovation process [11], making this selection 
+particularly well-suited for analysis in this study.
+The building model incorporates all relevant input parameters, 
+including climate data, building geometry and construction character­
+istics, occupancy and operational schedule, HVAC system, and lighting 
+and appliances data. The analyzed building is located in Sarajevo, the 
+capital of Bosnia and Herzegovina, in a cold continental climate, char­
+acterized by high energy consumption for heating and low energy con­
+Table 2 
+DSD experimental matrix with assessed PE, LCE, and..LCC
+Run
+x1
+x2
+x3
+x4
+x5
+x6
+x7
+PE, kWh/(m2a)
+LCE, tCO2/m2
+LCC, EUR/m2
+1
+0
+1
+1
+1
+1
+1
+1
+64.18
+1.41
+915.78
+2
+0
+−1
+−1
+−1
+−1
+−1
+−1
+211.83
+3.21
+1493.39
+3
+1
+0
+1
+1
+−1
+1
+−1
+149.91
+2.64
+1522.30
+4
+−1
+0
+−1
+−1
+1
+−1
+1
+133.19
+2.53
+966.19
+5
+1
+−1
+0
+1
+1
+−1
+1
+80.62
+1.57
+702.75
+6
+−1
+1
+0
+−1
+−1
+1
+−1
+229.25
+3.49
+1832.73
+7
+1
+−1
+−1
+0
+1
+1
+−1
+145.56
+2.19
+1354.84
+8
+−1
+1
+1
+0
+−1
+−1
+1
+151.67
+2.86
+1109.25
+9
+1
+1
+−1
+−1
+0
+1
+1
+107.96
+2.17
+1019.11
+10
+−1
+−1
+1
+1
+0
+−1
+−1
+223.94
+2.98
+1596.79
+11
+1
+−1
+1
+−1
+−1
+1
+1
+139.32
+2.63
+969.86
+12
+−1
+1
+−1
+1
+1
+−1
+−1
+181.41
+2.48
+1595.74
+13
+1
+1
+−1
+1
+−1
+−1
+1
+113.41
+2.20
+980.99
+14
+−1
+−1
+1
+−1
+1
+1
+−1
+215.31
+2.93
+1627.86
+15
+1
+1
+1
+−1
+1
+−1
+−1
+116.96
+2.16
+1333.88
+16
+−1
+−1
+−1
+1
+−1
+1
+1
+171.77
+3.17
+1075.59
+17
+0
+0
+0
+0
+0
+−1
+−1
+144.20
+2.40
+1414.66
+18
+0
+0
+0
+0
+0
+1
+1
+98.17
+1.97
+980.44
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+7 
+
+================================================================================
+PAGE 8
+================================================================================
+sumption for cooling [42]. As presented in Section 2.2., the typical 
+heating system for this category of buildings is a DH system using nat­
+ural gas as the main energy source. Cooling is provided by individual 
+split systems installed in apartments, while the lighting system is char­
+acterized by low energy efficiency. There are no renewable energy 
+systems installed on or connected to the building energy supply system. 
+Electricity is supplied from the national grid, which is predominantly 
+coal-based and associated with a very high PE and CO2 emission factor of 
+2.5 and 0.74 kgCO2/kWh, respectively. The modeled final energy con­
+sumption for heating is 95 kWh/(m2a). Model validation, based on three 
+years of measured data from the DH company, indicates excellent 
+agreement, with a deviation of 3.1% between simulated and actual 
+values. The total modeled electricity consumption amounts to 58 kWh/ 
+(m2a), aligning closely with relevant statistical data on household 
+electricity use [51].
+Simulation results are used to estimate operational PE, which in­
+cludes energy used for heating, cooling, DHW, lighting, and appliances, 
+reduced by the electricity produced from PV panels. Dynamic energy 
+simulations in DesignBuilder provided data on the energy needs Qnd,e for 
+each of the previously mentioned specific end-use categories, which was 
+then used to estimate PE based on the corresponding PE factors fp,e of 2.5 
+for electricity and 1.35 for energy supplied from DH [52], as described 
+with the following equation: 
+Qnd,e = BPS(x1, ⋯, x7)
+(4) 
+PE =
+∑
+t∈T
+∑
+e∈E
+Qnd,e
+ηe
+fp,e 
+fp,e =
+{
+1.35ifdh ∈Ms
+2.5 
+ηe = 1∀e∊E\{h, dhw}
+ηh =
+{
+0.97ifdh ∈Ms
+3 
+ηdhw =
+{
+1ifdh ∈Ms
+3 
+2.5.2. Life cycle assessment
+LCA includes evaluation of both the operational CO2 emissions 
+generated during the remaining building lifetime and the embodied 
+carbon emissions associated with the renovation process itself, including 
+materials, equipment, and construction activities [53]. The LCA in­
+ventory includes only the materials and equipment removed or added 
+through the implementation of proposed renovation measures, 
+excluding embodied emissions from existing, already-installed building 
+components and equipment.
+The most common method for calculating LCE within the LCA 
+framework relies on the use of emission factors associated with the 
+applied materials. All direct and indirect carbon-emitting activities and 
+the embodied emissions of materials and equipment are quantified in 
+functional units and multiplied by the corresponding emission factors 
+[54]. The equation used to calculate LCE over the entire building life­
+time, across all stages, is: 
+LCE =
+∑
+t∈T
+∑
+a∈AM
+aM,t,afM,t,a +
+∑
+t∈T
+∑
+a∈AO
+aO,t,afO,t,a
+(5) 
+Table 3 provides an overview of the LCA stages and corresponding 
+modules considered in the analysis. The embodied carbon emissions for 
+thermal insulation, windows, and PV panels are assessed using Umberto 
+11 software and the Ecoinvent 3.9.1 database. For heat pumps, lighting 
+systems, and external shading elements, data are collected from relevant 
+studies and Environmental Product Declarations (EPDs) [55]. For 
+module B4, embodied emissions are attributed to the replacement of 
+materials and equipment over the building’s lifetime, including the 
+removal of existing components, the supply of new materials, and all 
+associated installation activities. Emissions of particular component are 
+equivalent to the values used for modules A1-A5, and the expected 
+number of replacements is calculated based on a building lifetime and 
+the estimated lifespans of individual components: stone wool 75 years, 
+windows 20 years, LED bulbs 11.5 years, shading 20 years (assumed to 
+be the same as windows), PV panels 30 years and heat pump 15 years 
+[56 57 58,59]. Emissions for modules C3–C4 were calculated based on 
+replacement assumptions from module B4, using methodology pre­
+sented in [60], assuming recycling or sanitary landfill disposal. Ac­
+cording to [61], buildings’ lifetimes range from 30 to 150 years, with the 
+most common being 50 to 60 years. In this study, a 60-year building 
+lifetime is adopted, during which the lifespan of the renovation mea­
+sures is considered, as presented in Fig. 3.
+Fig. 4 and Appendix (Table A2) shows the contribution of individual 
+renovation measures to LCE, when implemented at the highest renova­
+tion level (+1), and disaggregated by each relevant LCA module. In this 
+analysis, operational emissions from module B6 are excluded to high­
+light the contributions of renovation measures across all modules related 
+to embodied emissions. The total embodied emissions associated with 
+materials and equipment used during the renovation amount to 
+729.97 tCO2eq, whereas the operational emissions over the building’s 
+lifetime in the modelled scenario are significantly higher, reaching 
+2662 tCO2eq.
+Module B4, representing embodied emissions from materials and 
+equipment replaced during the building’s 60-year lifetime, contributes 
+the most significantly to the considered modules of embodied LCE, ac­
+counting for 50% (Appendix, Table A.2). The largest contributors to B4 
+are windows, heating and DHW system and external shading, primarily 
+due to their high embodied carbon and frequent replacement cycles over 
+Table 3 
+LCA analysis stages and modules with input data specifications.
+Stage
+Module
+Description
+Production
+A1-A3
+Embodied carbon per unit of measure; Umberto 
+software, available studies, and EPDs 
+Quantity of material and equipment; Building model
+Construction
+A4-A5
+Use
+B1
+No direct emissions from the building itself; module is 
+excluded from the calculation
+B2
+Specific emissions of 10 kg CO2/m2 of net heated area or 1% 
+of A1-A5 module emissions; whichever is greater [83]
+​
+B3
+25% of B2 emissions of the relevant measures [83]
+​
+B4
+Embodied emissions captured in materials and equipment, 
+along with the expected number of material replacements 
+during the building’s lifetime (Fig. 3)
+​
+B5
+Major renovation works are already included within the 
+scope of this analysis; the module is omitted for the assumed 
+building lifetime
+Operation
+B6
+Operational emissions are calculated using PE consumption 
+data obtained from building modeling in Design Builder 
+(EnergyPlus) 
+Emission factors: electricity 0.74 kg CO2/kWh [84], DH 0.21 
+kg CO2/kWh [85]
+B7
+Renovation measures do not affect water use or wastewater 
+generation; operational emissions from water consumption 
+are excluded
+End-of- 
+life
+C1
+3,4 kgCO2e/m2 gross internal area (GIA) [86]
+C2
+Emissions are calculated similarly to module B4, considering 
+the expected number of replacements and the transportation 
+of materials to disposal sites 
+Average distance to recycling center (4 km), to the site of re- 
+production of wool (60 km), to the site of reuse of 
+construction rubble (50 km). Emission factor for the fuel 
+(2.49 kg CO2/l) and fuel consumption 15.2 l/h)
+C3 – 
+C4
+Emissions are calculated in correspondence with module B4, 
+accounting for assumed replacements and using emission 
+factors for waste processing; available literature and 
+Ecoinvent 3.9. [60]; All discarded materials are disposed of 
+in a sanitary landfill or recycled
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+8 
+
+================================================================================
+PAGE 9
+================================================================================
+the building’s lifetime. The second most impactful stage is the material 
+production and construction (modules A1–A5), which contributes 
+approximately 38.8% of the total considered modules of embodied LCE. 
+The highest emissions within this module are associated with the pro­
+duction of windows and external wall insulation, followed by external 
+shading, as shown in Fig. 4. The disposal phase (modules C3–C4) shows 
+a moderate contribution of 6.6%, largely due to emissions associated 
+with the disposal of PVC window frames and glass. Overall, windows 
+represent the largest single source of embodied carbon within the 
+considered modules of embodied LCE (31.9%), followed by heating and 
+DHW system (20.9%), external shading systems (20.4%) and PV panels 
+(18.5%), while other measures combined contribute less than 10%.
+2.5.3. Life cycle costs assessment
+For LCC calculation of the building renovation, the following cost 
+categories were considered: investment costs (IC), operational costs 
+(OC), and maintenance costs (MC). Accordingly, the total LCC was 
+estimated as: 
+LCC = IC + OC + MC
+(6) 
+The IC represents the discounted sum of the initial IC for each renovation 
+measure, as well as the costs of replacing specific materials and equip­
+ment throughout the building’s lifetime. The replacement frequencies 
+for specific materials and equipment are previously provided in Fig. 3. 
+Materials and equipment cost estimates are based on regional market 
+conditions. IC are calculated as: 
+IC =
+∑
+m∈M
+∑
+t∈Tm
+ICm
+(1 + iIC
+1 + d
+)t
+(7) 
+The OC for energy consumption is calculated as the sum of the OC for all 
+energy end-use categories, including heating, cooling, DHW, lighting, 
+and appliances, reduced by the electricity generated from PV panels. 
+When the current heating and DHW systems are replaced by a heat 
+pump, the energy costs for both end-uses are combined in the calcula­
+tion, as they are supplied as a single integrated system. The energy prices 
+applied in the analysis are based on regional market conditions. OC are 
+calculated as: 
+OC =
+∑
+e∈E
+∑
+t∈T
+[Qnd,e
+ηe
+[σepdh + (1 −σe)pel ] + σepc
+](1 + iOC
+1 + d
+)t
+(8) 
+σe = 0∀e∊E\{h, dhw}, ηe = 1∀e∊E\{h, dhw}
+σh =
+{
+1ifdh ∈Ms
+0 
+ηh =
+{
+0.97ifdh ∈Ms
+3 
+Fig. 3. Building’s lifetime and lifespan of renovation measures.
+Fig. 4. Distribution of emissions by LCA modules for the renovation measures implemented at level (+1).
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+9 
+
+================================================================================
+PAGE 10
+================================================================================
+ηdhw =
+{
+1ifdh ∈Ms
+3 
+The MC are estimated as a percentage of the total initial IC, applied 
+annually over the building’s lifetime: 
+MC =
+∑
+m∈M
+∑
+t∈T
+pICm
+(1 + iMC
+1 + d
+)t
+(9) 
+All costs are discounted to the current period to account for the time 
+value of money and varying market conditions, which is particularly 
+relevant for the long-term analysis. Previous studies have shown that a 
+wide range of discount rates may be considered adequate, depending on 
+the context and purpose of the analysis. These rates fluctuate signifi­
+cantly, ranging from values near to 0% for collective or socially oriented 
+renovation projects to values exceeding 7% for private or commercial 
+renovation projects [62]. Discount rates in the range of approximately 
+1–3% can be considered adequate when social and environmental as­
+pects and impacts are considered, particularly for renovation projects 
+with long-term and intergenerational consequences [62,63]. Since our 
+analysis is conducted over the full life cycle of the building with the 
+objective of achieving NZEB standards, considering PE, LCE, and LCC, a 
+uniform discount rate of 2.5% is applied to all assessments.
+Inflation rates were differentiated by cost category to account for the 
+fundamentally different cost determinants of IC, MC, and OC within the 
+LCC assessment. IC and MC are predominantly impacted by the prices of 
+construction materials, technical components, and equipment, which 
+are mainly affected by inflation in core goods. OC are related to occu­
+pants’ routine use of the building and are largely associated with energy 
+consumption for space heating and cooling, DHW, appliance use, and 
+lighting, and are therefore primarily affected by energy price inflation. 
+Recent studies emphasize that energy price inflation is distinct from core 
+inflation, characterized by higher volatility, wider value ranges, and 
+lower persistence. These characteristics suggest that treating energy 
+related cost escalation separately from other cost components may be 
+beneficial [64,65].
+This differentiated approach is consistent with similar methodolo­
+gies in the building renovation studies that apply separate inflation [62]
+or price escalation rates for energy and non–energy cost components 
+[7,66,67]. Treating energy price inflation rate separately is particularly 
+relevant in the context of Bosnia and Herzegovina, where current energy 
+prices are substantially lower than EU averages (0.109 EUR/kWh for 
+B&H and 0.289 EUR/kWh for EU) and are expected to rise.
+To ensure alignment with local economic conditions, inflation rates 
+are set in accordance with national forecasts of Central Bank of Bosnia 
+and Herzegovina. (2025) [68]. Accordingly, an inflation rate of 3.5% 
+was assigned to IC and MC, while a higher rate of 4% was assigned to OC 
+accounting for anticipated energy price escalation.
+2.6. Multi-objective optimization (MOO)
+Renovation of existing buildings is primarily aimed at maximizing 
+energy efficiency and minimizing environmental impact. The first 
+objective, improved energy efficiency, can be achieved by reducing PE 
+consumption, while the other, reduced environmental impact, by 
+reducing LCE. Achieving these objectives requires substantial financial 
+investment, making the assessment of cost-effectiveness essential, 
+especially under financial constraints and when considering the build­
+ing’s entire life cycle. The determination of an optimal renovation sce­
+nario that minimizes PE, LCE,
+and LCC requires simultaneous 
+optimization of these three objectives. Each objective function is defined 
+as a function of seven decision variables (x1 to x7), representing the 
+levels of individual renovation measures. Hence, the MOO problem 
+addressed in this study is defined as follows: 
+min
+x1,⋯,x7(PE, LCE, LCC)
+subject to: 
+−1 ≤x1, ⋯, x5 ≤1 
+x6, x7 ∈{ −1, 1}
+(10) 
+To solve the MOO problem defined by (10), the NSGA-III algorithm is 
+employed. NSGA-III is an evolutionary algorithm developed for MOO, 
+extending the capabilities of its predecessor, NSGA-II [69].While NSGA- 
+II relies on crowding distance to preserve solution diversity, NSGA-III 
+introduces reference point-based selection and objective space normal­
+ization, which are more effective in high-dimensional objective spaces. 
+By systematically distributing solutions using predefined reference 
+points, NSGA-III achieves a more uniform approximation of the Pareto 
+front and improved scalability in many-objective optimization prob­
+lems. After executing the NSGA-III algorithm, a set of non-dominated 
+solutions is obtained, forming the Pareto front. Each solution in this 
+set represents a distinct compromise between the objectives, with no 
+solution being superior to the others across all objectives.
+2.7. Pareto front solutions ranking
+As a result of MOO, the Pareto front with non-dominated solutions is 
+obtained. For practical decision-making and implementation of a reno­
+vation scenario, it is necessary to reduce the relatively large set of so­
+lutions to a smaller subset. The convenient approach to Pareto front 
+solution ranking is the employment of MCDM methods, which enable 
+evaluation and ranking of alternatives based on multiple, often con­
+flicting criteria. The employment of MCDM includes defining the sets of 
+alternatives and evaluation criteria, and criteria relative importance 
+(weights). The relative importance of criteria can be determined either 
+subjectively or objectively. The subjective approach usually involves 
+expert judgment, while the objective approach uses MCDM methods 
+designed for objective weights estimation.
+In this study, Pareto front solutions represent alternatives, while the 
+single-objective functions represent the evaluation criteria. All criteria 
+need to be minimized; thus, in terms of MCDM they represent costs. For 
+the evaluation and ranking of alternatives, the TOPSIS method is 
+employed. This method ranks alternatives based on their Euclidean 
+distance to the positive and negative ideal solutions, considering the 
+relative importance of each criterion [31,70]. The positive ideal solution 
+represents a hypothetical alternative that achieves the best values for all 
+criteria, while the negative ideal solution represents one that achieves 
+the worst values. In this study, the positive ideal solution corresponds to 
+the alternative with minimal PE, LCE, and LCC. According to the TOPSIS 
+method, optimal solution should have the shortest distance from the 
+positive ideal solution and the longest distance from the negative ideal 
+solution. For estimation of the criteria's relative importance, the Entropy 
+method is adopted [71]. The Entropy method assigns weights to criteria 
+based on the variation of each criterion across the set of alternatives. The 
+criteria with higher variability contain more information and are 
+therefore assigned greater weights, while the criteria with lower vari­
+ability contribute less to the decision-making process and thus smaller 
+weights are assigned. Descriptions of Entropy and TOPSIS methods are 
+provided in Appendix A.1 and A.2, respectively.
+3. Results
+3.1. Single-objective functions models (surrogate models)
+To perform multi-objective optimization, it was necessary to develop 
+SM for PE, LCE, and LCC. These models were developed using a simu­
+lation dataset generated through an experimental design based on the 
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+10 
+
+================================================================================
+PAGE 11
+================================================================================
+DSD methodology, as shown in Table 2. According to DSD, 18 simula­
+tion runs were conducted, each representing a distinct renovation sce­
+nario defined by systematically varying key design parameters 
+(renovation measures). For each scenario, dynamic energy simulations 
+were performed in DesignBuilder to determine PE values. LCE was 
+calculated using Umberto software with a detailed life cycle inventory 
+from the Ecoinvent database, as described in Sections 2.5.1 and 2.5.2, 
+while LCC was estimated according to the methodology presented in 
+Section 2.5.3. Based on these simulations and calculations (Table 2), PE 
+ranged from 229.25 to 64.18 kWh/(m2a), LCE from 3.49 to 1.41 tCO2/ 
+m2, and LCC from 1832.73 to 702.75 EUR/m2.
+The SM for approximating the single-objective functions were 
+developed using MLR. Given the small dataset, model optimization was 
+necessary to prevent overfitting and ensure adequacy. Selection of 
+models’ terms was performed using AICc, retaining only statistically 
+significant terms (p < 0.05) while preserving model hierarchy and 
+heredity.
+The second-order regression–based SM for estimating PE, LCE, and 
+LCC are given as follows, respectively: 
+PE = 129.595 −28.358x1 −11.980x2 −8.056x4 −20.409x5 −27.895x7
++ 23.528x2
+1 + 8.280x1x7
+(11) 
+LCE = 2.210 −0.319x1 −0.107x2 −0.053x3 −0.162x4 −0.381x5
+−0.203x7 + 0.373x2
+1 + 0.041x2x5 + 0.034x3x5
+(12) 
+LCC = 1245.374 −102.795x1 + 44.752x2 −13.783x4 −69.168x5
++ 44.709x6 −285.352x7 −37.709x4x6
+(13) 
+Analysis of Variance (ANOVA), shown in Table 4, confirms the strong 
+statistical significance of the SM. The models' mean squares are sub­
+stantially larger than the residual mean squares, which results in large F- 
+values for the three responses PE (70.45), LCE (478.83) and LCC 
+(200.64). This large difference between the model and residual mean 
+squares confirms that the model terms, representing design variables 
+and their main, interaction, and squared effects, explain most of the total 
+variability in each response, with the remaining unexplained error being 
+minimal. Consistent with these results, p-values for all models are below 
+0.0001, confirming statistical significance at a very high confidence 
+level.
+The performance of the SM demonstrates high statistical adequacy 
+and strong predictive capability for all three responses (PE, LCE, and 
+LCC), as shown in Table 5. The coefficients of determination (R2) are 
+high for all three responses (0.9801 for PE, 0.9981 for LCE, and 0.9929 
+for LCC), demonstrating that the fitted models explain most of variation 
+in the data. The adjusted R2 values (0.9662, 0.9961, and 0.9880) remain 
+close to the corresponding R2, which shows that the selected design 
+variables, through their representation in the model with their associ­
+ated terms, contribute meaningfully to model performance rather than 
+inflating the goodness-of-fit through model complexity. Additionally, 
+the predicted R2 values (0.9358 for PE, 0.9877 for LCE, and 0.9803 for 
+LCC) strongly confirm predictive accuracy on unseen data. The small 
+differences among the R2 measures indicate good generalization and a 
+low risk of overfitting. The Root Mean Square Error (RMSE) values are 
+low relative to the mean responses, as evidenced by the small Co­
+efficients of Variation (CV) (6.05%, 1.40%, and 2.79%). The predicted 
+RMSE values (12.0586 for PE, 0.0600 for LCE, and 43.3416 for LCC) are 
+also small relative to their respective mean responses, confirming that 
+the models maintain consistent predictive accuracy and provide good 
+generalization to data not used in models fitting. The consistency among 
+the R2 measures and the low error statistics confirm that the SM are 
+statistically robust, provide consistent predictions, and ensure reliable 
+approximation of the modeled responses.
+The high predictive performance and statistical adequacy of the SM 
+are visually confirmed by the actual versus predicted plots in Fig. 5. In 
+all three plots, the close grouping of the data points near the identity line 
+shows a strong correlation between models’ predicted and actual 
+(simulation) values. The fitted regression lines (in red) almost fully 
+overlap this line, confirming unbiased model predictions. The horizontal 
+blue lines represent the mean responses. The shaded 95% confidence 
+intervals remain narrow for most data points and show small differences 
+between actual and predicted values, while the random residual scatter 
+suggests that no systematic pattern remains in the residuals. These visual 
+results are consistent with the ANOVA statistics and goodness-of-fit in­
+dicators reported in Table 4 and 5 and validate the adequacy of the SM 
+for MOO.
+3.2. Multi-objective optimization using the NSGA-III algorithm
+The MOO problem defined by (10) is solved using the NSGA-III al­
+gorithm. The optimization resulted in a Pareto front consisting of 37 
+non-dominated solutions. The values of the single-objective functions 
+PE, LCE, and LCC within the Pareto front range from 57.59 to 100.91 
+kWh/(m2a), 1.32 to 1.85 tCO2/m2, and 687.11 to 866.91 EUR/m2, 
+respectively. The complete set of Pareto-optimal solutions (i.e., reno­
+vation scenarios), including the associated decision variables and cor­
+responding objective function values, is provided in the Appendix in 
+Table A.1.
+Fig. 6 shows the Pareto front solutions within the theoretical objec­
+tive space, along with the evolution of these solutions over successive 
+generations. The theoretical objective space is divided into two 
+Table 4 
+Analysis of Variance for surrogate models.
+Surrogate model
+Source
+DF
+Sum of Squares
+Mean Square
+F-value
+p-value
+PE
+Model
+7
+39976.224
+5710.89
+70.45
+0<.0001*
+​
+Error
+10
+810.654
+81.07
+​
+​
+​
+C. Total
+17
+40786.878
+​
+​
+​
+LCE
+Model
+9
+5.261
+0.58
+478.83
+0<.0001*
+​
+Error
+8
+0.009
+0.001
+​
+​
+​
+C. Total
+17
+5.270
+​
+​
+​
+LCC
+Model
+7
+1707299.100
+243900.00
+200.64
+0<.0001*
+​
+Error
+10
+12156.260
+1215.63
+​
+​
+​
+C. Total
+17
+1719455.300
+​
+​
+​
+Table 5 
+Summary of fit for surrogate models.
+Metric
+PE
+LCE
+LCC
+R2
+0.9801
+0.9981
+0.9929
+R2 Adjusted
+0.9662
+0.9961
+0.9880
+R2 Predicted
+0.9358
+0.9877
+0.9803
+Root Mean Square Error
+9.0036
+0.0349
+34.8658
+Root Mean Square Error (Predicted)
+12.0586
+0.0600
+43.3416
+Mean of Response
+148.8144
+2.4994
+1249.5640
+Coefficient of Variation (CV %)
+6.05%
+1.40%
+2.79%
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+11 
+
+================================================================================
+PAGE 12
+================================================================================
+subspaces, primarily distinguished by the installed heating system (DH 
+or heat pump system), with the heat pump system having a lower LCC. 
+The NSGA-III algorithm demonstrates effective global convergence to­
+ward the region with minimal objective function values, confirming its 
+efficiency in identifying the Pareto front.
+Fig. 7 presents the distribution of Pareto front solutions with pair­
+wise plots of objective functions. The LCE −PE plot shows a nonlinear, 
+positively correlated relationship between LCE and PE consumption. A 
+decrease in PE is associated with a corresponding reduction in LCE, 
+indicating that improvements in energy efficiency (i.e., reduced energy 
+consumption) result in improvements in building environmental im­
+pacts (i.e., reduced LCE). However, due to the nonlinear nature of the 
+relationship, reductions in PE do not correspond proportionally to re­
+ductions in LCE, and vice versa. For example, reducing PE from 100.91 
+to 84.75 kWh/(m2a) results in a decrease in LCE from approximately 
+1.85 to 1.52 tCO2/m2, while a further reduction in PE from 84.75 to 
+57.59 kWh/(m2a) results in a smaller increment in decrease in LCE, from 
+1.52 to 1.32 tCO2/m2. This implies that initial renovations, particularly 
+shallow renovations, result in a greater positive increment in environ­
+mental impact compared to following deeper renovations. The LCC −PE 
+plot shows a linear, negatively correlated relationship, indicating a 
+consistent trade-off between LCC and PE consumption. As PE decreases, 
+LCC increases nearly proportionally, and vice versa. This linear rela­
+tionship implies that improvements in energy efficiency are associated 
+with higher LCC, with a nearly constant increase rate in LCC. The 
+LCC −LCE plot shows a nonlinear, negatively correlated relationship, 
+with a general trend of increasing LCC as LCE decrease. A distinct shift in 
+the gradient of LCC occurs at an LCE of approximately 1.52 tCO2/m2. For 
+LCE values below 1.52 tCO2/m2, the gradient of LCC is larger, indicating 
+high sensitivity and a significant increase in LCC with relatively small 
+reductions in LCE. In contrast, for LCE values above 1.52 tCO2/m2, the 
+gradient is smaller, representing a region of lower sensitivity and a 
+reduced rate of trade-off between the two objectives.
+Distributions of decision variables’ values within the Pareto front of 
+optimal solutions are presented in the Appendix (Table A.1) and Fig. 8. 
+These distributions provide valuable insights into the degree of 
+Fig. 5. Actual versus predicted plots for the PE, LCE, and LCC surrogate models.
+Fig. 6. NSGA-III Pareto front within the theoretical objective space.
+Fig. 7. NSGA-III Pareto front.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+12 
+
+================================================================================
+PAGE 13
+================================================================================
+flexibility in adjusting individual variables without affecting solution 
+optimality. Variables x2 and x3 have wide distributions and high vari­
+ance, indicating their high flexibility for decision-making. They can be 
+adjusted over a full range of their values while maintaining optimal 
+performance, which is desirable in the presence of technical or stake­
+holder constraints. Variables x1 and x4, with relatively large variance, 
+provide moderate flexibility in their value adjustments. Modifications 
+within their observed ranges can maintain near-optimality, allowing 
+limited adjustments in decision-making. However, variables x5, x6, and 
+x7 have narrow distributions with very small or zero variance, indicating 
+that their values remain essentially fixed within the Pareto-optimal set. 
+These variables have minimal influence on trade-offs among objectives 
+and can therefore be regarded as constants, having no significant impact 
+on decision-making.
+3.3. Pareto front solutions ranking using the hybrid Entropy-TOPSIS 
+method
+Following the determination of Pareto-optimal solutions using the 
+NSGA-III algorithm, these solutions are further evaluated and ranked 
+using the hybrid Entropy-TOPSIS method. This additional step is needed 
+to reduce the relatively large set of Pareto-optimal solutions to a more 
+manageable subset for practical decision-making. As part of the TOPSIS 
+procedure, the ideal solution (ideal renovation scenario) is defined as 
+the solution that simultaneously minimizes all three objectives. The 
+weights for PE, LCE, and LCC, estimated by the Entropy method, are 
+0.6939, 0.1994, and 0.1067, respectively.
+Fig. 9 shows Pareto front solutions ranked by the hybrid Entropy- 
+TOPSIS method, with pairwise plots illustrating the relationships be­
+tween three objectives. The distribution of high-ranked solutions (rep­
+resented as green dots) reveals a distinct trade-off, with the high-ranked 
+solutions distributed in regions with low PE and LCE but relatively high 
+LCC. This pattern implies that achieving high energy efficiency and 
+reduced environmental impact is associated with increased investments. 
+Solutions with high TOPSIS scores therefore represent solutions that 
+prioritize sustainability objectives over economic efficiency, which is in 
+line with the obtained weights for PE, LCE, and LCC.
+The highest and the lowest-ranked Pareto front solutions are given in 
+Table 6. The highest-ranked solution has PE consumption of 58.55 kWh/ 
+(m2a), LCE of 1.35 tCO2/m2, and LCC of 846.49 EUR/m2, while the 
+lowest-ranked solution has PE consumption of 100.91 kWh/(m2a,) LCE 
+of 1.85 tCO2/m2, and LCC of 687.11 EUR/m2.
+The top five ranked Pareto front solutions are given in Table 7. These 
+solutions exhibit a narrow range of PE consumption values, from 57.59 
+to 61.22 kWh/(m2a), LCE values from 1.32 to 1.40 tCO2/m2, and LCC 
+values from 828.75 to 866.91 EUR/m2, indicating low variability be­
+tween solutions. The corresponding TOPSIS scores range from 0.9418, 
+for the highest-ranked solution, to 0.9026 for the fifth-ranked solution.
+The SM were validated using the highest-ranked renovation scenario 
+obtained from the multi-objective optimization (Table 6). For this sce­
+nario, the surrogate models predicted values of PE, LCE, and LCC are 
+58.55, 1.35, and 846.49, respectively, while the corresponding refer­
+ence values obtained from dynamic simulations in DesignBuilder are 
+61.34, 1.33, and 843.35. Model accuracy was evaluated using the 
+relative error metric, resulting in deviations of 4.54% for PE, 1.35% for 
+LCE, and 0.37% for LCC. These results show high level of agreement 
+between the surrogate model predictions and the simulation results, 
+with relative errors below 5%. Based on the obtained error levels, the SM 
+can be considered as adequate for estimating PE, LCE, and LCC.
+Fig. 10. and Appendix (Table A.3) shows the contribution of indi­
+vidual renovation measures to LCE, when implemented at the optimal 
+renovation scenario, and disaggregated by each relevant LCA module. In 
+this analysis, operational emissions from module B6 are excluded to 
+highlight the contributions of renovation measures across all modules 
+related to embodied emissions. The total embodied emissions associated 
+with materials and equipment used during the renovation amount to 
+577.46 tCO2eq, whereas the operational emissions over the building’s 
+lifetime in the modelled scenario are significantly higher, reaching 
+2850.76 tCO2eq.
+Module B4 (replacement) is the dominant contributor to embodied 
+Fig. 8. Distributions of decision variables’ values within Pareto front solutions.
+Fig. 9. NSGA-III Pareto front solutions ranked using the hybrid Entropy-TOPSIS method.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+13 
+
+================================================================================
+PAGE 14
+================================================================================
+LCE, accounting for 49% of the considered modules, as shown in Ap­
+pendix (Table A.3). This contribution is primarily driven by windows, 
+the heating and DHW system, and PV panels, due to their high embodied 
+carbon and relatively frequent replacement over the building lifetime.As
+shown in Fig. 10, the second most significant contribution is from ma­
+terial production and construction (modules A1–A5), which represent 
+approximately 38% of embodied LCE, mainly associated with the 
+production of windows and external wall insulation, followed by PV 
+modules and the heating and DHW system. Disposal stages (modules 
+C3–C4) contribute a smaller share of 7.2%, mostly related to the disposal 
+of PVC window frames and glass. Overall, windows represent the largest 
+single source of embodied carbon (39.0%), followed by the heating and 
+DHW system (26.9%), PV panels (18.4%), and wall insulation (10%).
+The ranking of all Pareto front solutions by the hybrid Entropy- 
+Table 6 
+The highest and lowest-ranked Pareto front solutions using the hybrid Entropy-TOPSIS method.
+Solution
+x1
+x2
+x3
+x4
+x5
+x6
+x7
+PE, kWh/(m2a)
+LCE, tCO2/m2
+LCC, EUR/m2
+TOPSIS Score
+10
+0.65
+0.98
+0.13
+0.99
+1.00
+−1.00
+1.00
+58.55
+1.35
+846.49
+0.9418
+26
+1.00
+−0.96
+−0.80
+−0.57
+1.00
+−1.00
+1.00
+100.91
+1.85
+687.11
+0.0589
+Table 7 
+Top five ranked Pareto front solutions using the hybrid Entropy-TOPSIS method.
+x1
+x2
+x3
+x4
+x5
+x6
+x7
+PE, kWh/(m2a)
+LCE, tCO2/m2
+LCC, EUR/m2
+TOPSIS Score
+Rank
+0.65
+0.98
+0.13
+0.99
+1.00
+−1.00
+1.00
+58.55
+1.35
+846.49
+0.9418
+1
+0.45
+0.96
+0.82
+0.99
+1.00
+−1.00
+1.00
+57.59
+1.32
+866.91
+0.9411
+2
+0.50
+0.77
+0.96
+0.99
+1.00
+−1.00
+1.00
+59.95
+1.33
+852.48
+0.9232
+3
+0.82
+0.98
+0.72
+0.97
+1.00
+−1.00
+1.00
+61.22
+1.38
+828.75
+0.9030
+4
+0.81
+0.95
+−0.71
+0.99
+1.00
+−1.00
+1.00
+61.15
+1.40
+828.98
+0.9026
+5
+Fig. 10. Distribution of emissions by LCA modules for the optimal (highest-ranked) renovation scenario.
+Fig. 11. The ranking of all Pareto front solutions using the hybrid Entropy-TOPSIS method.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+14 
+
+================================================================================
+PAGE 15
+================================================================================
+TOPSIS method is given in Fig. 11 and in Appendix Table A.1, along with 
+the visual representation of renovation level for each renovation 
+scenario.
+According to the obtained results and the variable values of the top 
+five ranked solutions, recommendations for the implementation of 
+renovation measures are derived, as presented in Table 8.
+4. Discussion and limitations
+4.1. Discussion
+The study results show that implementing energy renovation mea­
+sures can significantly reduce building operational PE, lowering it from a 
+maximum pre-renovation value of 229 kWh/(m2a) to a minimum of 
+58.55 kWh/(m2a) for the highest-ranked renovation scenario. This level 
+of performance aligns with NZEB standards in countries with similar 
+continental climates, such as Austria, the Czech Republic, and Poland, 
+where thresholds range between 68 and 75 kWh/(m2a) [72]. Even in 
+scenarios where electricity is the sole energy source, and despite the 
+high national primary energy conversion factor of 2.5, the results 
+confirm that NZEB standards can still be achieved through the imple­
+mentation of comprehensive renovation strategies. Calculated LCE over 
+a 60-year building lifetime range from a maximum of 3.49 tCO2/m2 to 
+1.35 tCO2/m2 for the highest-ranked renovation scenario. LCE includes 
+both operational CO2 emissions and embodied carbon emissions from 
+renovation materials, equipment, construction, and deconstruction ac­
+tivities. Calculated LCC, including investment, operational, and main­
+tenance costs over a 60-year building lifetime, range from 1832 to 703 
+EUR/m2. It is worth noting that LCC values are subject to greater un­
+certainty than LCE, primarily due to the higher variability of costs over 
+the building lifetime [73]. This uncertainty is largely driven by fluctu­
+ations in energy prices, which affect both investment and operational 
+costs, and is further amplified by uncertainty related to the selection of 
+discount rate [62]. As energy prices increase, renovation measures that 
+minimize both investment and operational costs are more likely to be 
+selected as optimal solutions [21].
+In the renovation scenario in which all measures are implemented at 
+their highest level, operational emissions (module B6) account for the 
+largest share of total LCE, reaching 78%. This confirms that operational 
+emissions remain the dominant contributor to LCE over a 60-year 
+building lifetime. The share of operational emissions in total LCE is 
+consistent with values reported in the literature, where they typically 
+contribute between 75% and 90% [19,21]. When considering embodied 
+emissions, module B4 (replacement) accounts for the largest share, 
+representing 50% of total embodied emissions and approximately 11% 
+of total LCE, which exceeds the contributions of the production and 
+construction stages. This result is associated with the frequent replace­
+ment of windows, external shading systems, and the heat pump, high­
+lighting that the replacement module should not be omitted when 
+assessing LCE over the building lifetime [74]. Additionally, although 
+material an equipment end of use stage contribute a relatively small 
+share of embodied emissions (approximately 6.6%), they should not be 
+excluded from the analysis, as the environmental impacts related to 
+construction and demolition waste present substantial potential for 
+improvement through enhanced material management and waste- 
+reduction strategies [75]. Analysis of the impact of individual mea­
+sures on embodied emissions, shows that windows contribute up to 
+31.9% of total embodied emissions, followed by the heating and DHW 
+system (20.9%), external shading systems (20.4%), and PV panels 
+(18.5%).
+The analysis shows that wall insulation thickness, window type, 
+lighting system type, PV active surface area, and heating and DHW 
+system type influence all three objectives. Increasing wall insulation 
+thickness generally reduces PE, LCE, and LCC. However, this measure 
+also exhibits nonlinear effects that slightly increase PE and LCE, never­
+theless, these contributions are significantly smaller compared to the 
+reductions achieved through the dominant linear effect. LCC decreases 
+progressively as wall insulation thickness increases, confirming the cost- 
+effectiveness of this renovation measure. These findings are consistent 
+with previous studies where it is concluded that optimal solutions 
+consistently include maximum insulation thickness, particularly in 
+colder climates and in scenarios prioritizing minimization of LCC [27]. 
+Additionally, in study [76], insulation thickness and insulation material 
+are identified as the most influential parameters in building renovation, 
+concluding that adding external wall insulation represents the most 
+effective renovation option [21]. Window replacement reduces PE and 
+LCE but increases LCC due to high costs and frequent replacements. 
+Adding roof insulation decreases LCE without affecting PE or LCC. The 
+lighting upgrades moderately reduce all objectives, while installation of 
+PV panel substantially decreases all objectives. External shading has no 
+impact on PE but increases LCE and LCC, indicating its ineffectiveness 
+for this climate. Replacing the heating and DHW system with a heat 
+pump substantially decreases all objectives, emphasizing its importance 
+for achieving optimal building performance across all objective 
+functions.
+Multi-objective optimization of renovation scenarios using the 
+NSGA-III algorithm resulted in 37 Pareto-optimal solutions. PE of these 
+solutions range from 100.91 to 57.59 kWh/(m2a) with approximately 
+half of the solutions having PE below 75 kWh/(m2a), complying with 
+NZEB standards. LCE varies between 1.85 and 1.32 tCO2/m2, while LCC 
+between 866.91 and 687.11 EUR/m2. A positive correlation is observed 
+between PE and LCE, however, reductions in PE are not proportional to 
+reductions in LCE. Results indicate that initial renovations, particularly 
+shallow renovations, result in a greater reduction in LCE compared to 
+following deeper renovations. Relationship between PE and LCC reveals 
+a strong, nearly linear negative correlation, indicating that lower PE 
+consumption is generally associated with higher LCC, almost at a pro­
+portional rate. This trend implies that achieving higher energy efficiency 
+often requires substantial additional investment. In contrast, the rela­
+tionship between LCE and LCC is nonlinear, with a significant change 
+near LCE of 1.52 tCO2/m2 and LCC of ~ 750 EUR/m2. Further emission 
+reductions incur disproportionately higher costs, emphasizing the 
+decreasing economic benefits of deep renovation measures. For LCE 
+above 1.52 tCO2/m2, the decrease in LCC becomes marginal, indicating 
+a region of lower sensitivity and a significantly reduced trade-off rate 
+between the two objectives.
+Study findings show that NSGA-III in combination with DSD is an 
+efficient and robust tool for optimizing building renovation strategies. 
+Compared to ANN-based approaches, which require extensive calibra­
+tion and overfitting handling [27], NSGA-III simplifies the optimization 
+process. At the same time, employing a DSD substantially reduces the 
+number of required simulations, addressing the challenge of long 
+computational times in simulation-based optimization, especially when 
+multiple renovation measures are evaluated. In addition, the perfor­
+mance of DSD in this study is consistent with findings from previous 
+Table 8 
+Recommendations for the implementation of renovation measures.
+Renovation measure
+Symbol
+Recommendation
+External wall 
+insulation
+x1
+Installing a minimum of 16.5 cm of insulation 
+on external walls
+Windows replacement
+x2
+Replacement of the current windows with 
+triple-glazed windows
+Roof insulation
+x3
+Replacement of the current roof insulation 
+with a minimum of 11 cm of insulation
+Lighting system 
+replacement
+x4
+Replacement of the current lighting system 
+with an automatic/adaptive lighting control 
+system
+PV panels installation
+x5
+Installation of PV panels on the entire flat roof
+Shading system 
+installation
+x6
+External shading installation is not 
+recommended
+Heating and DHW 
+system replacement
+x7
+Replacement of DH and DHW system with a 
+heat pump
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+15 
+
+================================================================================
+PAGE 16
+================================================================================
+studies that compared different DOE techniques in building engineering 
+for simpler case studies [37,38]. In both studies, FFD was used as the 
+reference method, while DSD achieved comparable accuracy and high 
+computational efficiency.
+Pareto-optimal solutions are ranked using a hybrid Entropy–TOPSIS 
+method with calculated weights that indicate the relative importance of 
+single objectives. PE has the highest influence on the ranking with 
+weight of 0.6939, reflecting its critical importance in meeting NZEB 
+standards, while LCE and LCC have significantly lower impacts on the 
+decision-making process with weights of 0.1994, and 0.1067, respec­
+tively. The top five ranked Pareto front solutions have PE consumption 
+values ranging from the smallest 57.59 to 61.22 kWh/(m2a), LCE values 
+from 1.32 to 1.40 tCO2/m2, and LCC values from 828.75 to 866.91 EUR/ 
+m2, with high TOPSIS scores ranging from 0.9418 to 0.9026. The highest 
+ranked renovation scenario has PE consumption of 58.55 kWh/(m2a), 
+LCE 1.35 tCO2/m2, and LCC of 846.49 EUR/m2. The findings also reveal 
+that the highest-ranked solutions achieve the lowest PE and LCE values 
+with the highest LCC among Pareto-optimal solutions, implying that 
+maximizing energy efficiency and minimizing environmental impact 
+require higher investment.
+According to the obtained results and the design variable values of 
+the highest-ranked solutions, optimal renovation scenario has been 
+determined. The analysis indicates that achieving the best performance 
+in terms of energy efficiency, environmental impact, and economic 
+benefits requires deep renovation. The optimal renovation scenario in­
+cludes installing a minimum of 16.5  cm of insulation on external walls, 
+11  cm on the roof, and replacing existing windows with triple-glazed 
+windows. Although triple glazing has a higher embodied carbon 
+compared to double glazing, its overall contribution to operational 
+emissions reduction justifies its inclusion in the optimal renovation 
+strategy. These findings are in agreement with the findings from other 
+studies, which have confirmed that passive measures are essential for 
+cost-effective building PE consumption optimization [10,11,21]. Addi­
+tionally, the renovation measures recommended for implementation at 
+the highest renovation level are lighting system replacement, installa­
+tion of PV panels on the roof, and the replacement of heating and DHW 
+systems with heat pumps. Upgrading the lighting system with adaptive 
+control reduces electricity consumption from the grid, associated with 
+high primary energy factors and CO2 emissions, thereby contributing to 
+reductions in both PE and LCE. Even the replacement of lighting system 
+is required approximately every 11.5 years, the resulting savings 
+compensate for these investments, ensuring cost-effectiveness over the 
+building’s lifetime, as confirmed in [11]. Installing PV panels across the 
+entire flat roof is recommended for substantial reductions in PE and LCE. 
+Electricity generated from PV panels and the resulting CO2 emission 
+reductions compensate for their high embodied carbon and associated 
+environmental impacts, as well as their substantial investment costs, 
+making PV installation a highly effective renovation measure. Addi­
+tionally, PV installation increases the share of renewable energy from 
+the current 0% to up to 40%, in deep renovation scenarios. Therefore, 
+installing PV panels on the maximum available roof area is recom­
+mended. Recent studies show that integrating grid-connected PV sys­
+tems for self-consumption contributes substantially to achieving the 
+2050 decarbonization targets [74] and combined with the passive 
+renovation measures is the most cost-effective strategy for building 
+renovation [77]. Finally, the optimal renovation scenario recommends 
+replacing existing heating and DHW systems with heat pumps to further 
+decrease PE, LCE, and LCC. Installing a heat pump for heating and DHW 
+increases electricity consumption from the grid and has a high embodied 
+carbon. In addition, heat pumps typically require replacement every 15 
+years, which is relatively frequent. Nevertheless, this measure is highly 
+beneficial, as confirmed in several studies which emphasize its efficiency 
+in reducing PE and LCE [78,79]. In the highest-ranked renovation sce­
+narios, the installation of a heat pump combined with deep envelope 
+renovation is recommended, as it significantly reduces building energy 
+consumption. Additionally, installation of heat pump in combination 
+with PV panels further reduces demand for electricity from the grid, as 
+well as PE, LCE, and LCC. The results of this study demonstrate that, even 
+under conditions of high national primary energy factors and high car­
+bon intensity of the electricity grid, electrification-based renovation 
+measures remain part of the optimal renovation scenarios. Similar 
+findings have been reported for countries with high grid carbon intensity 
+[21], while complementary results shows that these conclusions are also 
+applicable to countries with low-carbon electricity systems [73]. The 
+installation of external shading devices is not recommended, as it has no 
+significant effect on the reduction of PE and increases LCE and LCC due 
+to high replacement frequency and associated costs, which is valid for 
+the continental climate conditions typical for Central Europe. In 
+different climatic regions, such as desert, semi-arid, and Mediterranean, 
+this measure may be included in an optimal renovation scenario, as its 
+effectiveness is strongly influenced by local climate conditions [80,81]. 
+The analysis of the contribution of individual life-cycle stages to total 
+LCE shows that, in the optimal renovation scenario (highest-ranked 
+solution), operational emissions (module B6) account for 83% of total 
+LCE, while embodied emissions contribute the remaining 17%. Among 
+the embodied emissions, module B4 (replacement) represents the largest 
+share (49%), followed by the production and construction stages 
+(A1–A5), which account for 38%. Analysis of the impact of individual 
+measures on embodied emissions shows that windows contribute with 
+39.0% of total embodied emissions, followed by heating and DHW 
+system (26.9%), PV panels (18.4%) and wall insulation with 10.6%.
+The results show that an optimal renovation strategy for renovating 
+multifamily residential buildings to NZEB standards can be identified 
+through a life cycle-based optimization approach. These findings are 
+particularly relevant for buildings in continental climate regions and 
+provide valuable insights for planning and implementation of future 
+sustainable renovation projects.
+4.2. Limitations
+In estimations of PE, LCE, and LCC, temporal effects such as the aging 
+and performance deterioration of building components and equipment 
+were not considered. However, it is reasonable to expect that building 
+performance will decline over time as materials degrade, until compo­
+nents are replaced or renovated. Following renovation, performance is 
+generally restored to its initial level. Considering aging and degradation 
+effects over the building’s lifetime could enhance the accuracy of energy 
+use, carbon emissions (both embodied and operational), and cost as­
+sessments, providing a more comprehensive evaluation of long-term 
+performance.
+Although all LCA modules were included in the analysis, one limi­
+tation of this study is the use of a static electricity mix for the entire 
+building lifetime. The electricity mix is expected to shift toward re­
+newables, which would reduce the carbon intensity of operational 
+emissions while increasing the relative importance of embodied im­
+pacts. Future research should therefore examine how changes in the 
+electricity mix influence the selection of renovation measures [7,22]. 
+Additionally, while this study introduced a novel integration of emis­
+sions and cost into a unified assessment method, the inclusion of carbon 
+footprint compensation costs in total LCC calculations needs further 
+investigation to assess its impact on overall renovation [82].
+The use of a single ranking method, such as TOPSIS, or a single 
+weights estimation method, such as Entropy, may be sufficient for 
+decision-making. However, the integration of multiple methods, 
+particularly those employing different evaluation approaches, such as 
+those evaluating alternatives based on the distance from the ideal, 
+compromise, and average solution, as well as approaches with alterna­
+tive outranking, can improve the robustness and accuracy of final 
+rankings. Similarly, an ensemble approach for weights estimation, 
+which combines multiple methods, can result in more robust and reli­
+able criterion weights estimates.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+16 
+
+================================================================================
+PAGE 17
+================================================================================
+5. Conclusion
+This study presents the multi-objective optimization of residential 
+building renovation to NZEB standards, considering primary energy 
+consumption, life cycle emissions, and life cycle costs. A novel simula­
+tion experiment design based on Definitive Screening Design (DSD) is 
+introduced to ensure a time and computationally efficient optimization 
+process. The hybrid Entropy-TOPSIS method is applied to prioritize 
+objectives and rank renovation scenarios, enabling the selection of an 
+optimal renovation strategy with its corresponding set of measures.
+The key findings of the study can be summarized as follows: 
+- DSD was applied for the first time in the context of building reno­
+vation optimization to NZEB standards for an efficient simulation 
+experiment design and development of regression-based surrogate 
+models. This approach proved to be adequate and time and compu­
+tationally efficient, requiring only 18 simulations to evaluate the 
+effects of multiple renovation measures on the objective functions.
+- The NSGA-III algorithm was applied to simultaneously optimize 
+primary energy consumption, life cycle emissions, and life cycle 
+costs, successfully converging to a uniformly distributed Pareto 
+front. The Pareto front reveals clear trade-offs among the objectives.
+- The optimization results confirmed that achieving high energy and 
+environmental performance in renovated buildings requires sub­
+stantial financial investment. However, the results also confirmed 
+the long-term viability and sustainability of residential building 
+renovation projects.
+- Analysis of Pareto-optimal solutions showed that window replace­
+ment and roof insulation installation provide the greatest flexibility 
+in level selection without affecting solution optimality. External wall 
+insulation and lighting system replacement provide moderate flexi­
+bility, while PV module installation, shading system installation, and 
+heating and DHW system replacement remain fixed, representing 
+measures with limited flexibility and low influence on decision- 
+making in defining the renovation strategy.
+- The optimal renovation strategy proposes the installation of a min­
+imum of 16.5 cm of insulation on external walls and 11 cm on the 
+roof, replacement of the existing windows with triple-glazed win­
+dows, upgrade of the lighting system, installation of PV modules on 
+the maximum available flat roof area, and replacement of the district 
+heating system with a heat pump. External shading installation is not 
+feasible and therefore not recommended.
+- The highest-ranked renovation scenarios demonstrate that imple­
+mentation of energy renovation measures can reduce operational 
+primary energy consumption below 60 kWh/(m2a), life cycle emis­
+sions below 1.4 tCO2/m2, and life cycle costs below 850 EUR/m2.
+The study demonstrates that it is possible to identify renovation 
+scenarios that meet NZEB standards using a life cycle-based multi- 
+objective optimization approach. The study findings are relevant for 
+similar residential buildings in continental climate regions. Future 
+research should investigate the effects of material and equipment 
+degradation, changes in the electricity mix, and the integration of car­
+bon compensation costs into life cycle cost calculations.
+CRediT authorship contribution statement
+Dˇzana Kadri´c: Writing – original draft, Methodology, Investigation, 
+Formal analysis, Conceptualization. Amar Aganovi´c: Writing – review 
+& editing. Sanita Dˇzino: Writing – review & editing, Conceptualization. 
+Una Smailbegovi´c: Writing – review & editing, Conceptualization. 
+Ajdin Vatreˇs: Writing – review & editing, Methodology, Formal anal­
+ysis, Conceptualization. Edin Kadri´c: Writing – review & editing, 
+Validation, 
+Methodology, 
+Formal 
+analysis, 
+Data 
+curation, 
+Conceptualization.
+Declaration of competing interest
+The authors declare that they have no known competing financial 
+interests or personal relationships that could have appeared to influence 
+the work reported in this paper.
+Data availability
+Data will be made available on request.
+References
+[1] B. Chegari, M. Tabaa, E. Simeu, F. Moutaouakkil, H. Medromi, An optimal 
+surrogate-model-based approach to support comfortable and nearly zero energy 
+buildings design, Energy 248 (June 2022) 123584, https://doi.org/10.1016/j. 
+energy.2022.123584.
+[2] E. C. EC, “Directive 2010/31/EU of the European Parliament and of the Council of 
+19 May 2010 on the energy performance of buildings (recast),” 2010. [Online]. 
+Available: http://data.europa.eu/eli/dir/2010/31/oj.
+[3] D. D’Agostino, L. Mazzarella, What is a Nearly zero energy building? Overview, 
+implementation and comparison of definitions, J. Build. Eng. 21 (Jan. 2019) 
+200–212, https://doi.org/10.1016/j.jobe.2018.10.019.
+[4] E. C. EC, “Commission Delegated Regulation (EU) No 244/2012 of 16 January 
+2012 supplementing Directive 2010/31/EU of the European Parliament and of the 
+Council on the energy performance of buildings by establishing a comparative 
+methodology framework for calculating cost-optimal levels of minimum energy 
+performance requirements for buildings and building elements,” 2012. [Online]. 
+Available: http://data.europa.eu/eli/reg_del/2012/244/oj.
+[5] E. C. EC, “Directive (EU) 2024/1275 of the European Parliament and of the Council 
+of 24 April 2024 on the energy performance of buildings,” 2024. [Online]. 
+Available: http://data.europa.eu/eli/dir/2024/1275/oj.
+[6] A. Rauf, “Reducing Life Cycle Embodied Energy of Residential Buildings: 
+Importance of Building and Material Service Life,” Buildings, vol. 12, no. 11, Art. 
+no. 11, Nov. 2022, doi: 10.3390/buildings12111821.
+[7] O. Fahlstedt, F.N. Rasmussen, A. Temeljotov-Salaj, L. Huang, R.A. Bohne, Building 
+renovations and life cycle assessment - a scoping literature review, Renew. Sustain. 
+Energy Rev. 203 (Oct. 2024) 114774, https://doi.org/10.1016/j. 
+rser.2024.114774.
+[8] I. Costa-Carrapiço, R. Raslan, J.N. Gonz´alez, A systematic review of genetic 
+algorithm-based multi-objective optimisation for building retrofitting strategies 
+towards energy efficiency, Energ. Buildings 210 (Mar. 2020) 109690, https://doi. 
+org/10.1016/j.enbuild.2019.109690.
+[9] O. Pombo, B. Rivela, J. Neila, The challenge of sustainable building renovation: 
+assessment of current criteria and future outlook, J. Clean. Prod. 123 (June 2016) 
+88–100, https://doi.org/10.1016/j.jclepro.2015.06.137.
+[10] A. Kitsopoulou, E. Bellos, P. Lykas, M. Gr. Vrachopoulos, and C. Tzivanidis, “Multi- 
+objective evaluation of different retrofitting scenarios for a typical Greek building,” 
+Sustainable Energy Technologies and Assessments, vol. 57, p. 103156, June 2023, doi: 
+10.1016/j.seta.2023.103156.
+[11] M. Ibrahim, F. Harkouss, P. Biwole, F. Fardoun, S. Ouldboukhitine, Building 
+retrofitting towards net zero energy: A review, Energ. Buildings 322 (Nov. 2024) 
+114707, https://doi.org/10.1016/j.enbuild.2024.114707.
+[12] D. Kadri´c, A. Aganovi´c, E. Kadri´c, Multi-objective optimization of energy-efficient 
+retrofitting strategies for single-family residential homes: Minimizing energy 
+consumption, CO2 emissions and retrofit costs, Energy Rep. 10 (Nov. 2023) 
+1968–1981, https://doi.org/10.1016/j.egyr.2023.08.086.
+[13] M. Almeida, M. Ferreira, Cost effective energy and carbon emissions optimization 
+in building renovation (Annex 56), Energ. Buildings 152 (Oct. 2017) 718–738, 
+https://doi.org/10.1016/j.enbuild.2017.07.050.
+[14] R. F. De Masi, V. Festa, A. Gigante, S. Ruggiero, and G. Peter Vanoli, “The role of 
+windows on building performance under current and future weather conditions of 
+European climates,” Energy and Buildings, vol. 292, p. 113177, Aug. 2023, doi: 10. 
+1016/j.enbuild.2023.113177.
+[15] D. D’Agostino and C. Maduta, “7 - Enhancing energy performance of residential 
+buildings: Optimization of roof insulation and photovoltaic electric generation,” in 
+Cost-Effective Energy-Efficient Methods for Refurbishment and Retrofitting of Buildings, 
+F. Pacheco-Torgal, C.-G. Granqvist, G. P. Vanoli, N. Bianco, and J. Kurnitski, Eds., 
+in Woodhead Publishing Series in Civil and Structural Engineering. , Woodhead 
+Publishing, 2025, pp. 149–188. doi: 10.1016/B978-0-443-23974-8.00006-4.
+[16] M.K. Nematchoua, A simplified framework to assess the feasibility of zero-energy 
+at the European community scale in 2030, Sol. Energy 230 (Dec. 2021) 
+1040–1051, https://doi.org/10.1016/j.solener.2021.11.024.
+[17] C. Dominguez, E. Kakkos, D. Gross, R. Hischier, K. Orehounig, Renovated or 
+replaced? Finding the optimal solution for an existing building considering 
+cumulative CO2 emissions, energy consumption and costs – A case study, Energ. 
+Buildings 303 (Jan. 2024) 113767, https://doi.org/10.1016/j. 
+enbuild.2023.113767.
+[18] A. S. Canbolat and E. ˙I. Albak, “Multi-Objective Optimization of Building Design 
+Parameters for Cost Reduction and CO2 Emission Control Using Four Different 
+Algorithms,” Applied Sciences, vol. 14, no. 17, Art. no. 17, Jan. 2024, doi: 
+10.3390/app14177668.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+17 
+
+================================================================================
+PAGE 18
+================================================================================
+[19] Y. Zhou, V. Wy. Tam, and K. N. Le, “Developing a multi-objective optimization 
+model for improving building’s environmental performance over the whole design 
+process,” Building and Environment, vol. 246, p. 110996, Dec. 2023, doi: 10.1016/j. 
+buildenv.2023.110996.
+[20] X. Oregi, P. Hernandez, R. Hernandez, Analysis of life-cycle boundaries for 
+environmental and economic assessment of building energy refurbishment 
+projects, Energ. Buildings 136 (Feb. 2017) 12–25, https://doi.org/10.1016/j. 
+enbuild.2016.11.057.
+[21] K.-A. Kertsmik, K. Kuusk, K. Lylykangas, T. Kalamees, Evaluation of renovation 
+strategies: cost-optimal, CO2e optimal, or total energy optimal? Energ. Buildings 
+287 (May 2023) 112995 https://doi.org/10.1016/j.enbuild.2023.112995.
+[22] A. Galimshina, et al., What is the optimal robust environmental and cost-effective 
+solution for building renovation? Not the usual one, Energ. Buildings 251 (Nov. 
+2021) 111329, https://doi.org/10.1016/j.enbuild.2021.111329.
+[23] M.A. Kamazani, M.K. Dixit, S.S. Shanbhag, Multi-objective genetic optimization of 
+embodied and operational energy and carbon impacts of buildings in current and 
+future scenarios, Energ. Buildings 338 (July 2025) 115748, https://doi.org/ 
+10.1016/j.enbuild.2025.115748.
+[24] F. Zahra Benaddi, L. Boukhattem, and P. Cesar Tabares-Velasco, “Multi-objective 
+optimization of building envelope components based on economic, environmental, 
+and thermal comfort criteria,” Energy and Buildings, vol. 305, p. 113909, Feb. 2024, 
+doi: 10.1016/j.enbuild.2024.113909.
+[25] K. Alexakis, V. Benekis, P. Kokkinakos, D. Askounis, Genetic algorithm-based 
+multi-objective optimisation for energy-efficient building retrofitting: A systematic 
+review, Energ. Buildings 328 (Feb. 2025) 115216, https://doi.org/10.1016/j. 
+enbuild.2024.115216.
+[26] M. Ouria, P. Moura, A. Ouria, A.T. De Almeida, Multi-objective architectural 
+parametric optimization toward decarbonizing building sector - Tabriz city case 
+study, J. Build. Eng. 105 (July 2025) 112422, https://doi.org/10.1016/j. 
+jobe.2025.112422.
+[27] D. Ioannidis, P. Rigopoulos, K. Braimakis, P. Pallis, S. Karellas, Multi-objective 
+ANN-driven genetic algorithm optimization of energy efficiency measures in an 
+NZEB multi-family house building in Greece, Energ. Build. 351 (Jan. 2026) 
+116653, https://doi.org/10.1016/j.enbuild.2025.116653.
+[28] Y. Al-Kabaha, K. Bataineh, and M. Aburabi’e, “Multi-objective optimization of 
+energy consumption, cost and emission for a residential building,” Heliyon, vol. 11, 
+no. 3, p. e42139, Feb. 2025, doi: 10.1016/j.heliyon.2025.e42139.
+[29] M. Arbulu, X. Oregi, L. Etxepare, Environmental and economic optimization and 
+prioritization tool-kit for residential building renovation strategies with life cycle 
+approach, Build. Environ. 228 (Jan. 2023) 109813, https://doi.org/10.1016/j. 
+buildenv.2022.109813.
+[30] A. Razmi, M. Rahbar, M. Bemanian, PCA-ANN integrated NSGA-III framework for 
+dormitory building design optimization: Energy efficiency, daylight, and thermal 
+comfort, Appl. Energy 305 (Jan. 2022) 117828, https://doi.org/10.1016/j. 
+apenergy.2021.117828.
+[31] Y. Shi, P. Chen, Energy retrofitting of hospital buildings considering climate 
+change: An approach integrating automated machine learning with NSGA-III for 
+multi-objective optimization, Energ. Buildings 319 (Sept. 2024) 114571, https:// 
+doi.org/10.1016/j.enbuild.2024.114571.
+[32] R. Chen, Y.-S. Tsay, S. Ni, An integrated framework for multi-objective 
+optimization of building performance: Carbon emissions, thermal comfort, and 
+global cost, J. Clean. Prod. 359 (July 2022) 131978, https://doi.org/10.1016/j. 
+jclepro.2022.131978.
+[33] P. Westermann, R. Evins, Surrogate modelling for sustainable building design – A 
+review, Energ. Buildings 198 (Sept. 2019) 170–186, https://doi.org/10.1016/j. 
+enbuild.2019.05.057.
+[34] A.S. Cruz, L.R. Caldas, V.M. Mendes, J.C. Mendes, L.E.G. Bastos, Multi-objective 
+optimization based on surrogate models for sustainable building design: A 
+systematic literature review, Build. Environ. 266 (Dec. 2024) 112147, https://doi. 
+org/10.1016/j.buildenv.2024.112147.
+[35] D. Kadri´c, A. Aganovic, E. Kadri´c, B. Delali´c-Gurda, S. Jackson, Applying the 
+response surface methodology to predict the energy retrofit performance of the 
+TABULA residential building stock, J. Build. Eng. 61 (Dec. 2022) 105307, https:// 
+doi.org/10.1016/j.jobe.2022.105307.
+[36] G. Ciulla, A. D’Amico, Building energy performance forecasting: A multiple linear 
+regression approach, Appl. Energy 253 (Nov. 2019) 113500, https://doi.org/ 
+10.1016/j.apenergy.2019.113500.
+[37] A. Jankovic, G. Chaudhary, F. Goia, Designing the design of experiments (DOE) – 
+an investigation on the influence of different factorial designs on the 
+characterization of complex systems, Energ. Buildings 250 (Nov. 2021) 111298, 
+https://doi.org/10.1016/j.enbuild.2021.111298.
+[38] A. Jankovi´c, G. Chaudhary, F. Goia, Optimization through classical design of 
+experiments (DOE): An investigation on the performance of different factorial 
+designs for multi-objective optimization of complex systems, J. Build. Eng. 102 
+(May 2025) 111931, https://doi.org/10.1016/j.jobe.2025.111931.
+[39] R. Liu, T. Fang, Y. Cui, Y. Wang, Controllable cross-building multi-objective 
+optimisation for NZEBs: A framework Utilising parametric generation and 
+intelligent algorithms, Appl. Energy 374 (Nov. 2024) 124003, https://doi.org/ 
+10.1016/j.apenergy.2024.124003.
+[40] H. Omrany, R. Chang, V. Soebarto, Y. Zhang, A. Ghaffarianhoseini, J. Zuo, 
+A bibliometric review of net zero energy building research 1995–2022, Energ. 
+Buildings 262 (2022) 111996, https://doi.org/10.1016/j.enbuild.2022.111996.
+[41] T. Serrano, T. Kampmann, M.W. Ryberg, Comparative Life-Cycle Assessment of 
+restoration and renovation of a traditional danish farmer house, Build. Environ. 
+219 (July 2022) 109174, https://doi.org/10.1016/j.buildenv.2022.109174.
+[42] D. Arnautovi´c-Aksi´c et al., Typology of residential buildings in Bosnia and Herzegovina. 
+Sarajevo: Faculty of Architecture, University of Sarajevo, 2016. [Online]. 
+Available: http://af.unsa.ba/pdf/publikacije/Typology_of Residential_Buildings_in 
+Bosnia_and_Herzegovina.php.
+[43] A. Errore, B. Jones, W. Li, C.J. Nachtsheim, Using definitive screening designs to 
+identify active first- and second-order factor effects, J. Qual. Technol. 49 (3) (July 
+2017) 244–264, https://doi.org/10.1080/00224065.2017.11917993.
+[44] M. Seddiki, A. Bennadji, A life cycle carbon assessment and multi-criteria decision- 
+making framework for building renovation within the circular economy context: A 
+case study, Buildings 15 (11) (Jan. 2025) 1894, https://doi.org/10.3390/ 
+buildings15111894.
+[45] M. Masiukiewicz, M. Ta´nczuk, S. Anweiler, G. Streckien˙e, S. Boldyryev, Long-term 
+climate-based sizing and economic assessment of air-water heat pumps for 
+residential heating, Appl. Therm. Eng. 258 (Jan. 2025) 124627, https://doi.org/ 
+10.1016/j.applthermaleng.2024.124627.
+[46] R. Yondo, E. Andr´es, E. Valero, A review on design of experiments and surrogate 
+models in aircraft real-time and many-query aerodynamic analyses, Prog. Aerosp. 
+Sci. 96 (Jan. 2018) 23–61, https://doi.org/10.1016/j.paerosci.2017.11.003.
+[47] B. Jones, C.J. Nachtsheim, A class of three-level designs for definitive screening in 
+the presence of second-order effects, J. Qual. Technol. 43 (1) (Jan. 2011) 1–15, 
+https://doi.org/10.1080/00224065.2011.11917841.
+[48] B. Jones, C.J. Nachtsheim, Definitive screening designs with added two-level 
+categorical factors*, J. Qual. Technol. 45 (2) (Apr. 2013) 121–129, https://doi. 
+org/10.1080/00224065.2013.11917921.
+[49] L. Xiao, D.K.J. Lin, F. Bai, Constructing definitive screening designs using 
+conference matrices, J. Qual. Technol. 44 (1) (Jan. 2012) 2–8, https://doi.org/ 
+10.1080/00224065.2012.11917877.
+[50] K.P. Burnham, D.R. Anderson, Multimodel inference: Understanding AIC and BIC 
+in model selection, Sociol. Methods Res. 33 (2) (Nov. 2004) 261–304, https://doi. 
+org/10.1177/0049124104268644.
+[51] D. Agic, V. Rizvic, and S. Agic, “Report of energy poverty in Bosnia and 
+Herzegovina,” 2016, [Online]. Available: https://ekologija.ba/file/pregled-nacio 
+nalne-situacije-u-bih-2016/58.
+[52] MPGI, “Primary energy factors and CO2 emissions,” Ministry of Spatial Planning, 
+Construction and State Property, 2017. [Online]. Available: https://mpgi.gov.hr/ 
+UserDocsImages/dokumenti/EnergetskaUcinkovitost/meteoroloski_podaci/ 
+FAKTORI_primarne_energije.pdf.
+[53] X. Zhan, W. Zhang, R. Chen, Y. Bai, J. Wang, G. Deng, Non-dominated sorting 
+genetic algorithm-II: A multi-objective optimization method for building 
+renovations with half-life cycle and economic costs, Build. Environ. 267 (Jan. 
+2025) 112155, https://doi.org/10.1016/j.buildenv.2024.112155.
+[54] Z. Huang, H. Zhou, Z. Miao, H. Tang, B. Lin, W. Zhuang, Life-cycle carbon 
+emissions (LCCE) of buildings: Implications, calculations, and reductions, 
+Engineering 35 (Apr. 2024) 115–139, https://doi.org/10.1016/j.eng.2023.08.019.
+[55] M. J. Scholand and H. E. Dillon, “Life-Cycle Assessment of Energy and 
+Environmental Impacts of LED Lighting Products,” Office of Energy Efficiency and 
+Renewable Energy U.S. Department of Energy, Prepared by: Pacific Northwest 
+National Laboratory N14 Energy Limited, 2012.
+[56] G. Acar, M. Steeman, and N. Van Den Bossche, “Reusing Thermal Insulation 
+Materials: Reuse Potential and Durability Assessment of Stone Wool Insulation in 
+Flat Roofs,” Sustainability, vol. 16, no. 4, Art. no. 4, Jan. 2024, doi: 10.3390/s 
+u16041657.
+[57] S. Carlisle, E. Friedlander, The influence of durability and recycling on life cycle 
+impacts of window frame assemblies, Int. J. Life Cycle Assess. 21 (11) (Nov. 2016) 
+1645–1657, https://doi.org/10.1007/s11367-016-1093-x.
+[58] S. Dewey, “Exploring the Lifespan of Air Source Heat Pumps.,” Heat From Air. 
+Accessed: Apr. 07, 2025. [Online]. Available: https://heatfromair.co.uk/exploring 
+-the-lifespan-of-air-source-heat-pumps/.
+[59] M. A. Franco and S. N. Groesser, “A Systematic Literature Review of the Solar 
+Photovoltaic Value Chain for a Circular Economy,” Sustainability, vol. 13, no. 17, 
+Art. no. 17, Jan. 2021, doi: 10.3390/su13179615.
+[60] X. Luo, M. Ren, J. Zhao, Z. Wang, J. Ge, W. Gao, Life cycle assessment for carbon 
+emission impact analysis for the renovation of old residential areas, J. Clean. Prod. 
+367 (Sept. 2022) 132930, https://doi.org/10.1016/j.jclepro.2022.132930.
+[61] M. Leichter, C. Piccardo, Assessing life cycle sustainability of building renovation 
+and reconstruction: A comprehensive review of case studies and methods, Build. 
+Environ. 262 (Aug. 2024) 111817, https://doi.org/10.1016/j. 
+buildenv.2024.111817.
+[62] S. Copiello, L. Gabrielli, P. Bonifaci, Evaluation of energy retrofit in buildings 
+under conditions of uncertainty: The prominence of the discount rate, Energy 137 
+(Oct. 2017) 104–117, https://doi.org/10.1016/j.energy.2017.06.159.
+[63] J. Hirvonen, A. Saari, J. Jokisalo, R. Kosonen, Socio-economic impacts of large- 
+scale deep energy retrofits in finnish apartment buildings, J. Clean. Prod. 368 
+(Sept. 2022) 133187, https://doi.org/10.1016/j.jclepro.2022.133187.
+[64] X. Fang, Y. Liu, and N. Roussanov, “Getting to the Core: Inflation Risks Within and 
+Across Asset Classes,” Rev Financ Stud, p. hhaf050, July 2025, doi: 10.1093/rf 
+s/hhaf050.
+[65] O. Barkan, J. Benchimol, I. Caspi, E. Cohen, A. Hammer, N. Koenigstein, 
+Forecasting CPI inflation components with hierarchical recurrent neural networks, 
+Int. J. Forecast. 39 (3) (July 2023) 1145–1162, https://doi.org/10.1016/j. 
+ijforecast.2022.04.009.
+[66] T. Niemel¨a, R. Kosonen, J. Jokisalo, Cost-effectiveness of energy performance 
+renovation measures in finnish brick apartment buildings, Energ. Buildings 137 
+(Feb. 2017) 60–75, https://doi.org/10.1016/j.enbuild.2016.12.031.
+[67] T. Niemel¨a, K. Levy, R. Kosonen, J. Jokisalo, Cost-optimal renovation solutions to 
+maximize environmental performance, indoor thermal conditions and productivity 
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+18 
+
+================================================================================
+PAGE 19
+================================================================================
+of office buildings in cold climate, Sustain. Cities Soc. 32 (July 2017) 417–434, 
+https://doi.org/10.1016/j.scs.2017.04.009.
+[68] Central Bank of Bosnia and Herzegovina, “A quick estimate of GDP for the first and 
+second quarters of 2025 and inflation in the short term (Original: Brza procjena 
+BDP-a za prvo i drugo tromjeseˇcje 2025. godine i inflacije u kratkom roku),” BiH, 
+2025. [Online]. Available: https://www.cbbh.ba/data/dokumenti/pdf 
+/Brza_procjena_BDP-a_za_I_i_II_kvartal_2025._{ii}nflacije_u_kratkom_roku-hrv.pdf.
+[69] K. Deb, H. Jain, An evolutionary many-objective optimization algorithm using 
+reference-point-based nondominated sorting approach, part I: Solving problems 
+with box constraints, IEEE Trans. Evol. Comput. 18 (4) (Aug. 2014) 577–601, 
+https://doi.org/10.1109/TEVC.2013.2281535.
+[70] F. Mostafazadeh, S.J. Eirdmousa, M. Tavakolan, Energy, economic and comfort 
+optimization of building retrofits considering climate change: A simulation-based 
+NSGA-III approach, Energ. Buildings 280 (Feb. 2023) 112721, https://doi.org/ 
+10.1016/j.enbuild.2022.112721.
+[71] S. Yu, Y. An, C. Shi, A. Wang, Multi-objective hierarchical strategy for university 
+dorm renovation in severe cold areas, J. Build. Eng. 91 (Aug. 2024) 109660, 
+https://doi.org/10.1016/j.jobe.2024.109660.
+[72] D. D’Agostino, S.T. Tzeiranaki, P. Zangheri, P. Bertoldi, Assessing nearly zero 
+energy buildings (NZEBs) development in Europe, Energ. Strat. Rev. 36 (July 2021) 
+100680, https://doi.org/10.1016/j.esr.2021.100680.
+[73] A. Galimshina, M. Moustapha, A. Hollberg, S. Lasvaux, B. Sudret, G. Habert, 
+Strategies for robust renovation of residential buildings in Switzerland, Nat. 
+Commun. 15 (1) (Mar. 2024) 2227, https://doi.org/10.1038/s41467-024-46305- 
+9.
+[74] J. García-L´opez, M. Hern´andez-Valencia, J. Roa-Fern´andez, E.J. Mascort-Albea, 
+R. Herrera-Limones, Balancing construction and operational carbon emissions: 
+Evaluating neighbourhood renovation strategies, J. Build. Eng. 94 (Oct. 2024) 
+109993, https://doi.org/10.1016/j.jobe.2024.109993.
+[75] L. Hasselsteen, E.B. Stapel, H. Birgisd´ottir, C.G. Sørensen, K. Kanafani, Evaluating 
+the environmental impact of construction waste: A comprehensive analysis of end- 
+of-life scenarios in environmental product declarations, Build. Environ. 280 (July 
+2025) 113159, https://doi.org/10.1016/j.buildenv.2025.113159.
+[76] J.F. Baptista, S. Kokare, A.V. Francisco, R. Godina, D. Aelenei, A comparative life 
+cycle assessment of ETICS and ventilated façade systems with timber cladding, 
+Energ. Buildings 304 (Feb. 2024) 113842, https://doi.org/10.1016/j. 
+enbuild.2023.113842.
+[77] A. Stefanovi´c, M. Boji´c, D. Gordi´c, Achieving net zero energy cost house from old 
+thermally non-insulated house using photovoltaic panels, Energ. Buildings 76 
+(June 2014) 57–63, https://doi.org/10.1016/j.enbuild.2014.02.057.
+[78] R. Vollmer, M. L¨ammle, S. Hess, H.-M. Henning, Optimization of energetic 
+refurbishment roadmaps for multi-family buildings utilizing heat pumps, Energ. 
+Buildings 280 (Feb. 2023) 112729, https://doi.org/10.1016/j. 
+enbuild.2022.112729.
+[79] M. Hamdy and G. M. Mauro, “Multi-Objective Optimization of Building Energy 
+Design to Reconcile Collective and Private Perspectives: CO2-eq vs. Discounted 
+Payback Time,” Energies, vol. 10, no. 7, p. 1016, July 2017, doi: 10.3390/e 
+n10071016.
+[80] C. Li, et al., Optimal design of building envelope towards life cycle performance: 
+Impact of considering dynamic grid emission factors, Energ. Buildings 323 (Nov. 
+2024) 114770, https://doi.org/10.1016/j.enbuild.2024.114770.
+[81] M. Talaei, H. Sangin, Multi-objective optimization of energy and daylight 
+performance for school envelopes in desert, semi-arid, and mediterranean climates 
+of Iran, Build. Environ. 255 (May 2024) 111424, https://doi.org/10.1016/j. 
+buildenv.2024.111424.
+[82] M. Ropo, H. Mustonen, M. Knuutila, M. Luoranen, A. Kosonen, Considering 
+embodied CO2 emissions and carbon compensation cost in life cycle cost 
+optimization of carbon-neutral building energy systems, Environ. Impact Assess. 
+Rev. 101 (July 2023) 107100, https://doi.org/10.1016/j.eiar.2023.107100.
+[83] Greater London Authority, “Whole Life-Cycle Carbon Assessments,” Greater 
+London Authority, 2022. [Online]. Available: https://www.mainer.co.uk/latest 
+-news-1/whole-life-cycle-carbon-the-london-plan-guidance.
+[84] UN Climate Change, “The IFI Dataset of Default Grid Factors v.3.2.” 2021. 
+[Online]. Available: https://unfccc.int/climate-action/sectoral-engagement/ifis-ha 
+rmonization-of-standards-for-ghg-accounting/ifi-twg-list-of-methodologies.
+[85] R. D. Gomez et al., “IPCC Guidelines for National Greenhouse Gas Inventories, 
+Volume 2: Stationary Combustion,” 2006.
+[86] The Institution of Structural Engineers, “How to calculate embodied carbon,” 2022. 
+[Online]. Available: https://www.egbc.ca/getmedia/a7603519-43cc-4795-8558- 
+6960b2b7b5d1/HTCEC-2nd-edition.pdf.
+D. Kadri´c et al.                                                                                                                                                                                                                                  
+Energy & Buildings 356 (2026) 117068 
+19 

@@ -1,0 +1,667 @@
+### [Markdown Cell 0]
+# PI-HGAT NZEB Retrofit Pipeline — ICAE 2026
+
+**Integrated decision-support framework for hot-humid NZEB office retrofits, Ho Chi Minh City.**
+Case study: DOE Medium Office prototype (4,982 m2), baseline EUI 122.1 kWh/m2/yr, Koppen Aw.
+
+This notebook is the single end-to-end runner; it mirrors the framework figure
+(`results/figures/0. FRAMEWORK DEMO.png`) part by part:
+
+| Framework block | Notebook sections | Key inputs | Outputs |
+|---|---|---|---|
+| **PART 0 — Data Input (Building/Urban/Graph)** | S1 | `data/registry/neo4j_query_table_data_2026-6-2.json` | PyG-ready KG topology |
+| **PART 0 — Simulation & Calibration (offline)** | S2–3 | `data/aggregated_LHS_results.csv` (9 climate x 250 LHS, built by `scripts/data/aggregate_lhs_results.py`) | X (11 features), Y (EUI) |
+| **PART 1 — AI-based Prediction** | S4–S10 | HeteroData graphs | trained PI-HGAT + baselines, Fig. 5 |
+| **PART 2 — Multi-Objective Optimization** | S11–S13 | surrogate f1 + `pi_hgat/objectives.py` (f2 LCC, f3 LCE) | Pareto set, TOPSIS ranking, Fig. 6–9, 11 |
+| **PART 3 — XAI & Recommendations** | S14 | trained model + Pareto optimum | GNNExplainer subgraph, trade-off report |
+
+**Economic/LCA basis (locked 2026-07-02):** 20-yr study period, 8% real discount, elec 0.137 USD/kWh
+(EVN before-VAT), grid EF 0.6592 kgCO2e/kWh (MONRE 1726/2024), PV yield 1,420 kWh/kWp/yr.
+All constants live in `pi_hgat/config.py`; sourced registry: `data/jEPlus-LHS/ICAE2026_DataRegistry_P1-P9.xlsx`.
+
+
+### [Code Cell 1]
+```python
+import os, sys, json, time
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader as TorchDL
+from torch_geometric.loader import DataLoader as PyGDL
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from sklearn.linear_model import LinearRegression
+import xgboost as xgb
+
+from pi_hgat.config import *
+from pi_hgat.graph_builder import GraphBuilder
+from pi_hgat.synthetic_data import SyntheticDataGenerator
+from pi_hgat.models import PI_HGAT, BaselineANN
+from pi_hgat.physics_loss import PhysicsLoss
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f'Device: {device}')
+
+def seed_all(s=42):
+    np.random.seed(s); torch.manual_seed(s)
+    if torch.cuda.is_available(): torch.cuda.manual_seed_all(s)
+seed_all(42)
+```
+
+### [Markdown Cell 2]
+## PART 0 · Section 1 — Data Input: Knowledge Graph (BIM/Revit -> Neo4j -> PyG)
+Loads the heterogeneous KG exported from Neo4j (nodes: Building/Storey/Zone/Surface/System;
+edges: containment/adjacency) and extracts the zone topology used by the graph builder.
+
+
+### [Code Cell 3]
+```python
+print('Loading KG from Neo4j JSON...')
+builder = GraphBuilder(NEO4J_JSON_PATH)
+baseline_data = builder.create_heterodata()
+print(baseline_data)
+
+n_nodes = sum(baseline_data[nt].num_nodes for nt in baseline_data.node_types)
+n_edges = sum(baseline_data[et].num_edges for et in baseline_data.edge_types)
+print(f'\nNodes: {n_nodes}, Edges: {n_edges}')
+print('Node feature dims:')
+for nt in baseline_data.node_types:
+    print(f'  {nt}: {baseline_data[nt].x.shape}')
+```
+
+### [Markdown Cell 4]
+> ### 📊 FIGURE SLOT — **Fig. 2 · KG schema & case-study building** *(PART 0)*
+> **Nội dung:** (a) DOE Medium Office 3D + HCMC context; (b) sơ đồ hetero-KG (node types Zone/Envelope/Material/System/Climate, edge types + số lượng in ra ở cell trên). Học theo Fig.3 BCGS của paper GAT-BEM 2025.
+> **Data:** cell S1 (`baseline_data` node/edge counts). **Style:** `fig_style.py`, node types = categorical slots. **Status:** ⬜ chưa dựng
+
+
+### [Markdown Cell 5]
+## PART 0 · Sections 2–3 — Simulation Results: jEPlus LHS (9 climate scenarios x 250 samples)
+Loads `data/aggregated_LHS_results.csv` — REAL EnergyPlus results aggregated from
+`data/jEPlus-LHS/{1_Baseline, 2..9}/LHS-*/eplustbl.csv` by `scripts/data/aggregate_lhs_results.py`
+(2,250 rows; weather: TMYx 2011-2025 baseline + 8 CMIP6 futures, ACCESS-CM2 / MRI-ESM2-0 x SSP245/585 x 2050s/2080s).
+P8 PV / P9 BESS are NOT in EnergyPlus (demand-side only) — they enter f2/f3 in post-processing (S11).
+Climate is encoded as a global feature `Climate_DeltaT` (delta-morphing dT per scenario).
+
+
+### [Code Cell 6]
+```python
+print('Loading LHS samples from aggregated_LHS_results.csv...')
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv(r'data/aggregated_LHS_results.csv')
+
+samples = []
+X = []
+Y = []
+
+climate_delta_map = {'1_Baseline': 0.0, '2': 1.879, '3': 2.665, '4': 2.179, '5': 4.472, '6': 1.27, '7': 1.875, '8': 1.611, '9': 3.144}
+
+for _, row in df.iterrows():
+    s = {
+        'P1_Wall_U': 1.0 / row['@@P1_Wall_R@@'],
+        'P2_Roof_U': 1.0 / row['@@P2_Roof_R@@'],
+        'P3_Roof_Reflectance': 1.0 - row['@@P3_Roof_Abs@@'],
+        'P4_Win_U': row['@@P4_U@@'],
+        'P4_Win_SHGC': row['@@P4_SHGC@@'],
+        'P5_COP': row['@@P5_COP@@'],
+        'P6_Cool_SP': row['@@P6_ClgSetp@@'],
+        'P7_LPD': row['@@P7_LPD@@'],
+        'P8_PV_kW': 0.0,  # Not in E+
+        'P9_BESS_kWh': 0.0, # Not in E+
+        'Climate_DeltaT': climate_delta_map.get(str(row['Scenario']), 0.0)
+    }
+    samples.append(s)
+    X.append([s['P1_Wall_U'], s['P2_Roof_U'], s['P3_Roof_Reflectance'],
+              s['P4_Win_U'], s['P4_Win_SHGC'], s['P5_COP'],
+              s['P6_Cool_SP'], s['P7_LPD'], s['P8_PV_kW'], s['P9_BESS_kWh'],
+              s['Climate_DeltaT']])
+    # Convert EUI from MJ/m2 to kWh/m2
+    Y.append([row['EUI_MJ_m2'] / 3.6])
+
+X_flat = np.array(X)
+Y_eui = np.array(Y)
+
+print(f'X: {X_flat.shape}, Y: {Y_eui.shape}')
+print(f'EUI range: {Y_eui.min():.1f} – {Y_eui.max():.1f} kWh/m²/yr')
+print(f'Baseline check (first sample): {Y_eui[0,0]:.1f}')
+
+idx = np.arange(len(samples))
+idx_train, idx_temp = train_test_split(idx, test_size=0.3, random_state=42)
+idx_val, idx_test = train_test_split(idx_temp, test_size=0.5, random_state=42)
+print(f'Split: {len(idx_train)} train / {len(idx_val)} val / {len(idx_test)} test')
+```
+
+### [Markdown Cell 7]
+## PART 1 · Section 4 — Build PyG HeteroData Dataset
+One heterogeneous graph per LHS sample: type-specific node features (zone geometry, envelope
+parameters, system efficiencies) + global retrofit vector. Train/val/test = 70/15/15.
+
+
+### [Code Cell 8]
+```python
+print('Building 5000 HeteroData graphs with type-specific features...')
+t0 = time.time()
+dataset = []
+for i, s in enumerate(samples):
+    data = builder.create_sample_graph(s)
+    data.y = torch.tensor([[Y_eui[i, 0]]], dtype=torch.float)
+    # Store flat params for global skip connection
+    data.global_params = torch.tensor([X_flat[i]], dtype=torch.float)
+    dataset.append(data)
+    if (i+1) % 1000 == 0:
+        print(f'  {i+1}/5000 ...')
+
+train_loader = PyGDL([dataset[i] for i in idx_train], batch_size=TRAIN_PARAMS['batch_size'], shuffle=True)
+val_loader   = PyGDL([dataset[i] for i in idx_val],   batch_size=TRAIN_PARAMS['batch_size'])
+test_loader  = PyGDL([dataset[i] for i in idx_test],  batch_size=TRAIN_PARAMS['batch_size'])
+print(f'DataLoaders ready ({time.time()-t0:.1f}s)')
+```
+
+### [Markdown Cell 9]
+## PART 1 · Section 5 — Define & Initialize PI-HGAT
+Heterogeneous Graph Attention Network with physics-informed loss (`pi_hgat/models.py`,
+`pi_hgat/physics_loss.py`).
+
+
+### [Code Cell 10]
+```python
+metadata = baseline_data.metadata()
+print('Edge types:', [f'{s}-[{r}]->{t}' for s,r,t in metadata[1]])
+
+model = PI_HGAT(
+    metadata=metadata,
+    hidden_channels=GNN_PARAMS['hidden_channels'],
+    out_channels=1,
+    num_layers=GNN_PARAMS['num_layers'],
+    heads=GNN_PARAMS['heads'],
+    dropout=GNN_PARAMS['dropout'],
+    global_dim=11, 
+).to(device)
+
+# Init lazy modules with dummy forward
+dummy = next(iter(train_loader)).to(device)
+model(dummy.x_dict, dummy.edge_index_dict, dummy.batch_dict, dummy.global_params)
+
+n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f'\nModel parameters: {n_params:,}')
+
+```
+
+### [Markdown Cell 11]
+## PART 1 · Sections 6–7 — Train PI-HGAT (Adam + LR scheduler + early stopping)
+
+
+### [Code Cell 12]
+```python
+optimizer = torch.optim.Adam(model.parameters(), lr=TRAIN_PARAMS['lr'],
+                             weight_decay=TRAIN_PARAMS['weight_decay'])
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=TRAIN_PARAMS['epochs'], eta_min=1e-6)
+criterion = PhysicsLoss(lambda_bound=0.1, lambda_mono=0.0)
+
+def run_epoch(model, loader, optimizer=None):
+    is_train = optimizer is not None
+    model.train() if is_train else model.eval()
+    total = 0.
+    ctx = torch.enable_grad() if is_train else torch.no_grad()
+    with ctx:
+        for batch in loader:
+            batch = batch.to(device)
+            out = model(batch.x_dict, batch.edge_index_dict,
+                        batch.batch_dict, batch.global_params)
+            loss, _, _, _ = criterion(out, batch.y)
+            if is_train:
+                optimizer.zero_grad(); loss.backward(); optimizer.step()
+            total += loss.item() * batch.num_graphs
+    return total / len(loader.dataset)
+
+hist = {'train': [], 'val': []}
+best_val, patience_cnt = 1e9, 0
+print('Training PI-HGAT...')
+t0 = time.time()
+
+for ep in range(1, TRAIN_PARAMS['epochs']+1):
+    tl = run_epoch(model, train_loader, optimizer)
+    vl = run_epoch(model, val_loader)
+    scheduler.step(vl)
+    hist['train'].append(tl); hist['val'].append(vl)
+
+    if vl < best_val:
+        best_val = vl; patience_cnt = 0
+        torch.save(model.state_dict(), 'best_hgat_v2.pt')
+    else:
+        patience_cnt += 1
+        if patience_cnt >= TRAIN_PARAMS['patience']:
+            print(f'Early stop @ epoch {ep}'); break
+
+    if ep % 20 == 0:
+        lr = optimizer.param_groups[0]['lr']
+        print(f'  Ep {ep:3d}: train={tl:.2f}  val={vl:.2f}  lr={lr:.1e}')
+
+print(f'Done in {time.time()-t0:.1f}s (best val={best_val:.4f})')
+model.load_state_dict(torch.load('best_hgat_v2.pt', weights_only=True))
+```
+
+### [Markdown Cell 13]
+## PART 1 · Section 8 — Baseline Surrogates (XGBoost, ANN/MLP, Linear Regression)
+Same X/Y splits as PI-HGAT for a fair benchmark.
+
+
+### [Code Cell 14]
+```python
+Xtr, Ytr = X_flat[idx_train], Y_eui[idx_train].ravel()
+Xv, Yv   = X_flat[idx_val],   Y_eui[idx_val].ravel()
+Xte, Yte = X_flat[idx_test],  Y_eui[idx_test].ravel()
+
+# 1. Linear Regression
+print('Training Linear Regression...')
+lr_model = LinearRegression().fit(Xtr, Ytr)
+
+# 2. XGBoost
+print('Training XGBoost...')
+xgb_model = xgb.XGBRegressor(n_estimators=200, max_depth=6, learning_rate=0.1,
+                              random_state=42, tree_method='hist')
+xgb_model.fit(Xtr, Ytr)
+
+# 3. ANN
+print('Training ANN...')
+ann = BaselineANN(Xtr.shape[1], 1).to(device)
+ann_opt = torch.optim.Adam(ann.parameters(), lr=1e-3)
+ann_crit = nn.MSELoss()
+ds = TensorDataset(torch.tensor(Xtr, dtype=torch.float),
+                    torch.tensor(Ytr, dtype=torch.float).unsqueeze(1))
+dl = TorchDL(ds, batch_size=64, shuffle=True)
+
+ann.train()
+for ep in range(200):
+    for bx, by in dl:
+        bx, by = bx.to(device), by.to(device)
+        ann_opt.zero_grad()
+        ann_crit(ann(bx), by).backward()
+        ann_opt.step()
+print('All baselines trained.')
+```
+
+### [Markdown Cell 15]
+## PART 1 · Section 9 — Evaluation & Benchmark (R2, RMSE, MAE)
+Produces the surrogate comparison table (paper Table: model benchmark).
+
+
+### [Code Cell 16]
+```python
+def metrics(yt, yp):
+    return dict(R2=r2_score(yt, yp),
+                RMSE=mean_squared_error(yt, yp)**0.5,
+                MAE=mean_absolute_error(yt, yp),
+                MAPE=mean_absolute_percentage_error(yt, yp)*100)
+
+# PI-HGAT
+model.eval()
+hgat_p, hgat_t = [], []
+with torch.no_grad():
+    for batch in test_loader:
+        batch = batch.to(device)
+        out = model(batch.x_dict, batch.edge_index_dict,
+                    batch.batch_dict, batch.global_params)
+        hgat_p.extend(out.cpu().numpy().flatten())
+        hgat_t.extend(batch.y.cpu().numpy().flatten())
+hgat_p, hgat_t = np.array(hgat_p), np.array(hgat_t)
+
+# Baselines
+lr_p  = lr_model.predict(Xte)
+xgb_p = xgb_model.predict(Xte)
+ann.eval()
+with torch.no_grad():
+    ann_p = ann(torch.tensor(Xte, dtype=torch.float).to(device)).cpu().numpy().flatten()
+
+results = {
+    'PI-HGAT':    metrics(hgat_t, hgat_p),
+    'XGBoost':    metrics(Yte, xgb_p),
+    'ANN (MLP)':  metrics(Yte, ann_p),
+    'Linear Reg': metrics(Yte, lr_p),
+}
+df = pd.DataFrame(results).T
+df.columns = ['R²', 'RMSE', 'MAE', 'MAPE (%)']
+print('\n===== BENCHMARK RESULTS =====')
+display(df.round(4))
+```
+
+### [Markdown Cell 17]
+## PART 1 · Section 10 — Visualization: Prediction Performance
+Produces **Fig. 5** (actual vs predicted). Save outputs to `results/figures/`.
+
+
+### [Code Cell 18]
+```python
+fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+
+# (0,0) Learning Curves
+ax = axes[0,0]
+ax.plot(hist['train'], label='Train', alpha=.8)
+ax.plot(hist['val'],   label='Val',   alpha=.8)
+ax.set_title('PI-HGAT Learning Curve', fontsize=12)
+ax.set_xlabel('Epoch'); ax.set_ylabel('Loss')
+ax.legend(); ax.grid(True, alpha=.3)
+
+# (0,1) Scatter: PI-HGAT
+ax = axes[0,1]
+ax.scatter(hgat_t, hgat_p, s=8, alpha=.5, c='royalblue')
+lims = [min(hgat_t.min(), hgat_p.min())-5, max(hgat_t.max(), hgat_p.max())+5]
+ax.plot(lims, lims, 'r--', lw=1)
+ax.set_title(f'PI-HGAT  R²={df.loc["PI-HGAT","R²"]:.4f}', fontsize=12)
+ax.set_xlabel('True EUI (kWh/m²/yr)'); ax.set_ylabel('Predicted')
+ax.grid(True, alpha=.3)
+
+# (1,0) Scatter: XGBoost
+ax = axes[1,0]
+ax.scatter(Yte, xgb_p, s=8, alpha=.5, c='forestgreen')
+lims2 = [min(Yte.min(), xgb_p.min())-5, max(Yte.max(), xgb_p.max())+5]
+ax.plot(lims2, lims2, 'r--', lw=1)
+ax.set_title(f'XGBoost  R²={df.loc["XGBoost","R²"]:.4f}', fontsize=12)
+ax.set_xlabel('True EUI'); ax.set_ylabel('Predicted')
+ax.grid(True, alpha=.3)
+
+# (1,1) Bar Chart: R² comparison
+ax = axes[1,1]
+colors = ['royalblue', 'forestgreen', 'darkorange', 'gray']
+bars = ax.bar(df.index, df['R²'], color=colors, edgecolor='black', linewidth=0.5)
+for bar, val in zip(bars, df['R²']):
+    ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.01,
+            f'{val:.4f}', ha='center', fontsize=9)
+ax.set_title('Model Comparison (R²)', fontsize=12)
+ax.set_ylabel('R² Score'); ax.set_ylim(0, 1.05)
+ax.grid(True, alpha=.3, axis='y')
+
+plt.tight_layout()
+plt.savefig('benchmark_results_v2.png', dpi=150, bbox_inches='tight')
+plt.show()
+print('Saved: benchmark_results_v2.png')
+```
+
+### [Markdown Cell 19]
+> ### 📊 FIGURE SLOT — **Fig. 5 · Predicted vs Actual (4 panels)** *(PART 1)*
+> 4 panel PI-HGAT ★ / XGBoost / ANN / LR trên test set; identity line + R² annotation; màu theo `MODEL_COLORS`. Thay thế `Fig5_PredictionPerf.png` (mock). **Data:** `hgat_t/hgat_p`, `Yte`, `xgb_p`, `ann_p`, `lr_p`. **Status:** ⬜ chờ retrain data thật
+>
+> ### 📊 FIGURE SLOT — **Fig. 6 · Benchmark & robustness (2×2)** *(PART 1)*
+> (a) bars R²/RMSE/MAE/MAPE có value label; (b) boxplot R² qua 10–20 seeds; (c) train-vs-test R² (overfitting check); (d) train time (log s). Gộp Table-6-style của GAT-BEM vào 1 hình. **Cần thêm code:** vòng lặp multi-seed + timing. **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 7 · Learning curve — sample-size sufficiency** *(PART 1)*
+> CV R² theo n_samples (250 → 2,250, theo scenario-block) + dải ±1σ; chứng minh 250 LHS/climate là đủ (250/62,500 = 0.4% full factorial). **Cần thêm code:** learning-curve loop trên GBR/PI-HGAT. **Status:** ⬜
+
+
+### [Markdown Cell 20]
+## PART 2 · Section 11 — NSGA-III Problem Definition (f1 EUI | f2 LCC | f3 LCE)
+f1 = PI-HGAT surrogate (site EUI, demand-side); f2/f3 = `pi_hgat/objectives.py`
+(Kadric-style IC+OC+MC and EN 15978 modules A1-A3, A4-A5, B2-B3, B4, B6, C1-C4),
+20-yr / 8%-real basis from `pi_hgat/config.py`. PV (P8) and BESS (P9) enter here
+via net-energy post-processing, not through the surrogate.
+
+
+### [Code Cell 21]
+```python
+from pymoo.core.problem import ElementwiseProblem
+from pi_hgat.objectives import ObjectiveCalculator
+import torch
+
+# Initialize objectives calculator
+obj_calc = ObjectiveCalculator(builder)
+
+class NZEBRetrofitProblem(ElementwiseProblem):
+    def __init__(self, model_surrogate, builder):
+        # 10 variables (P1..P9 + Climate). Climate is fixed to HCMC mean for MOO.
+        super().__init__(n_var=10, n_obj=3, n_ieq_constr=0,
+                         xl=np.array([0.29, 0.18, 0.30, 1.00, 0.15, 2.96, 24.0, 2.50, 0.0, 0.0]),
+                         xu=np.array([1.07, 0.45, 0.85, 2.87, 0.22, 5.00, 27.0, 6.66, 50.0, 150.0]))
+        self.model = model_surrogate
+        self.model.eval()
+        self.builder = builder
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        # 1. Map decision variables (THÊM P9_BESS_kWh: x[9])
+        params = {
+            'P1_Wall_U': x[0], 'P2_Roof_U': x[1], 'P3_Roof_Reflectance': x[2],
+            'P4_Win_U': x[3], 'P4_Win_SHGC': x[4], 'P5_COP': x[5],
+            'P6_Cool_SP': x[6], 'P7_LPD': x[7], 'P8_PV_kW': x[8], 'P9_BESS_kWh': x[9],
+            'Climate_DeltaT': 0.0  # Assume mean climate for design optimization
+        }
+        
+        # 2. Predict EUI using PI-HGAT
+        data = self.builder.create_sample_graph(params)
+        
+        # Thêm P9_BESS_kWh vào list input
+        x_flat = [params['P1_Wall_U'], params['P2_Roof_U'], params['P3_Roof_Reflectance'],
+                  params['P4_Win_U'], params['P4_Win_SHGC'], params['P5_COP'],
+                  params['P6_Cool_SP'], params['P7_LPD'], params['P8_PV_kW'], params['P9_BESS_kWh'], params['Climate_DeltaT']]
+        data.global_params = torch.tensor([x_flat], dtype=torch.float)
+        
+        with torch.no_grad():
+            batch_dict = {nt: torch.zeros(data[nt].x.size(0), dtype=torch.long, device=device) 
+                          for nt in data.node_types}
+            out_eui = self.model(
+                {nt: data[nt].x.to(device) for nt in data.node_types},
+                {et: data[et].edge_index.to(device) for et in data.edge_types},
+                batch_dict,
+                data.global_params.to(device)
+            )
+            eui = out_eui.item()
+            
+        # 3. Calculate LCC and LCA
+        lcc = obj_calc.calculate_lcc(params, eui)
+        lca = obj_calc.calculate_lca(params, eui)
+        
+        # 4. Assign objectives (Minimize all)
+        out["F"] = [eui, lcc, lca]
+
+problem = NZEBRetrofitProblem(model, builder)
+print("MOO Problem Defined: 10 Variables, 3 Objectives (EUI, LCC, LCA)")
+
+```
+
+### [Markdown Cell 22]
+> ### 📊 FIGURE SLOT — **Fig. 3 · Component lifespans vs 20-yr study period** *(PART 2, setup)*
+> Barh lifespan P1–P9 (`config.LIFESPANS_SHORT`) + vạch dọc 20 năm; đánh dấu các measure có replacement (P5@15, P7@12, P9@15). Số liệu THẬT từ config — có thể vẽ ngay. **Status:** ⬜ dễ, làm ngay được
+>
+> ### 📊 FIGURE SLOT — **Fig. 4 · Embodied LCE by module @ max renovation** *(PART 2, setup)*
+> Stacked bar 5 module embodied (A1-A3→C1-C4, ordinal blues `LCA_COLORS`), **B6 loại ra** (theo Kadrić Fig.4); mỗi measure P1–P9 một cột. **Data:** `obj_calc.calculate_lca_breakdown()` @ level max. **Status:** ⬜
+
+
+### [Markdown Cell 23]
+## PART 2 · Section 12 — Run NSGA-III
+Produces the Pareto front (**Fig. 6** evolution, **Fig. 7** pairwise).
+
+
+### [Code Cell 24]
+```python
+from pymoo.algorithms.moo.nsga3 import NSGA3
+from pymoo.optimize import minimize
+from pymoo.util.ref_dirs import get_reference_directions
+
+# Generate reference directions for NSGA-III (3 objectives)
+ref_dirs = get_reference_directions("das-dennis", 3, n_partitions=12)
+
+algorithm = NSGA3(pop_size=91, ref_dirs=ref_dirs)
+
+print("Running NSGA-III optimization... (This may take a minute)")
+t0 = time.time()
+res = minimize(problem,
+               algorithm,
+               seed=42,
+               termination=('n_gen', 50),
+               verbose=True)
+
+print(f"Optimization finished in {time.time()-t0:.1f}s")
+print(f"Found {len(res.F)} Pareto optimal solutions.")
+```
+
+### [Markdown Cell 25]
+> ### 📊 FIGURE SLOT — **Fig. 8 · Pareto front + convergence** *(PART 2)*
+> (a) 3D Pareto (EUI–LCC–LCE) màu TOPSIS (`seq_cmap`); (b) hypervolume theo generation (cần `save_history=True` trong `minimize`). **THAY THẾ** Fig6 mock "evolution" cũ — hypervolume là bằng chứng hội tụ chuẩn hơn scatter. **Status:** ⬜
+
+
+### [Markdown Cell 26]
+## PART 2 · Section 13 — Entropy-TOPSIS Ranking & Pareto Visualization
+Entropy-weighted TOPSIS closeness coefficient over the Pareto set
+(**Fig. 8** decision variables, **Fig. 9** TOPSIS-coloured front, **Fig. 11** heatmap).
+
+
+### [Code Cell 27]
+```python
+from scipy.stats import entropy
+
+F = res.F
+
+# --- Entropy-TOPSIS ---
+# 1. Normalize Decision Matrix
+norm_F = F / np.sqrt((F**2).sum(axis=0))
+
+# 2. Calculate Entropy Weights
+P = norm_F / norm_F.sum(axis=0)
+E = -np.nansum(P * np.log(P), axis=0) / np.log(len(F))
+W = (1 - E) / (1 - E).sum()
+print(f"Objective Weights (Entropy): EUI={W[0]:.3f}, LCC={W[1]:.3f}, LCA={W[2]:.3f}")
+
+# 3. Weighted Normalized Matrix
+V = norm_F * W
+
+# 4. Ideal and Anti-Ideal Solutions (Cost criteria: min is ideal)
+ideal = V.min(axis=0)
+anti_ideal = V.max(axis=0)
+
+# 5. Distances & Closeness
+d_ideal = np.sqrt(((V - ideal)**2).sum(axis=1))
+d_anti = np.sqrt(((V - anti_ideal)**2).sum(axis=1))
+closeness = d_anti / (d_ideal + d_anti)
+
+best_idx = np.argmax(closeness)
+best_solution = res.X[best_idx]
+best_obj = res.F[best_idx]
+
+print("\n===== OPTIMAL COMPROMISE SOLUTION (TOPSIS) =====")
+print(f"EUI: {best_obj[0]:.2f} kWh/m2/yr")
+print(f"LCC: ${best_obj[1]:,.2f}")
+print(f"LCA: {best_obj[2]:,.2f} kgCO2eq")
+print(f"Parameters: P1={best_solution[0]:.2f}, P2={best_solution[1]:.2f}, P3={best_solution[2]:.2f}, "
+      f"P4_U={best_solution[3]:.2f}, P4_SHGC={best_solution[4]:.2f}, P5={best_solution[5]:.2f}, "
+      f"P6={best_solution[6]:.1f}, P7={best_solution[7]:.2f}, P8={best_solution[8]:.1f}kW, "
+      f"P9={best_solution[9]:.1f}kWh")
+
+
+# --- Visualization ---
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+sc = ax.scatter(F[:, 0], F[:, 1]/1e6, F[:, 2]/1e6, c=closeness, cmap='viridis', s=40, alpha=0.8)
+ax.scatter(best_obj[0], best_obj[1]/1e6, best_obj[2]/1e6, color='red', s=150, marker='*', label='TOPSIS Best')
+
+ax.set_xlabel('EUI (kWh/m2/yr)')
+ax.set_ylabel('LCC (Million $)')
+ax.set_zlabel('LCA (Million kgCO2eq)')
+ax.set_title('NSGA-III Pareto Front: EUI vs LCC vs LCA', fontsize=14)
+plt.colorbar(sc, label='TOPSIS Closeness')
+plt.legend()
+plt.savefig('pareto_front_3d.png', dpi=150, bbox_inches='tight')
+plt.show()
+print("Saved: pareto_front_3d.png")
+```
+
+### [Markdown Cell 28]
+> ### 📊 FIGURE SLOT — **Fig. 9 · Pairwise Pareto colored by TOPSIS** *(PART 2)*
+> 3 panel EUI–LCC / EUI–LCE / LCC–LCE, màu = closeness (`seq_cmap`), ★ = compromise. GỘP Fig7 (pairwise trơn) vào đây — Fig7 cũ **bỏ** vì trùng. **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 10 · LCE by module: Baseline vs Optimal vs Max** *(PART 2)*
+> GỘP Fig4-cũ + Fig10-cũ thành 1 hình 3 cột nhóm (module màu `LCA_COLORS` + B6 aqua) — kể trọn câu chuyện NZEB-paradox trong 1 hình. **Data:** `calculate_lca_breakdown()` cho 3 cấu hình. **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 11 · Renovation-level heatmap of Pareto set** *(PART 2)*
+> Heatmap (P1–P9 × solutions xếp theo TOPSIS, `seq_cmap`, level chuẩn hóa 0–1). **Kadrić Fig.11.** **Status:** ⬜
+>
+> **💾 BẮT BUỘC:** lưu `res.X`, `res.F`, `closeness` → `results/pareto_solutions.csv` để mọi figure tái lập được.
+
+
+### [Markdown Cell 29]
+## PART 3 · Section 14 — Spatial Explainability (GNNExplainer)
+Explains the recommended retrofit package: which zones/surfaces/edges drive the EUI
+prediction (paper Fig.: explanation subgraph + trade-off report).
+
+
+### [Code Cell 30]
+```python
+from torch_geometric.explain import Explainer, GNNExplainer
+import networkx as nx
+
+# Prepare data using Best Compromise Solution from TOPSIS
+best_params = {
+    'P1_Wall_U': best_solution[0], 'P2_Roof_U': best_solution[1], 'P3_Roof_Reflectance': best_solution[2],
+    'P4_Win_U': best_solution[3], 'P4_Win_SHGC': best_solution[4], 'P5_COP': best_solution[5],
+    'P6_Cool_SP': best_solution[6], 'P7_LPD': best_solution[7], 'P8_PV_kW': best_solution[8], 
+    'P9_BESS_kWh': best_solution[9],
+    'Climate_DeltaT': 0.0
+}
+
+data = builder.create_sample_graph(best_params)
+data.global_params = torch.tensor([[best_solution[0], best_solution[1], best_solution[2],
+                                    best_solution[3], best_solution[4], best_solution[5],
+                                    best_solution[6], best_solution[7], best_solution[8], 
+                                    best_solution[9], 0.0]], dtype=torch.float)
+
+
+batch_dict = {nt: torch.zeros(data[nt].x.size(0), dtype=torch.long, device=device) for nt in data.node_types}
+data = data.to(device)
+data.global_params = data.global_params.to(device)
+
+class ModelWrapper(torch.nn.Module):
+    def __init__(self, model, batch_dict, global_params):
+        super().__init__()
+        self.model = model
+        self.batch_dict = batch_dict
+        self.global_params = global_params
+    def forward(self, x_dict, edge_index_dict):
+        return self.model(x_dict, edge_index_dict, self.batch_dict, self.global_params)
+
+wrapped_model = ModelWrapper(model, batch_dict, data.global_params)
+
+explainer = Explainer(
+    model=wrapped_model,
+    algorithm=GNNExplainer(epochs=200),
+    explanation_type='model',
+    node_mask_type='attributes',
+    edge_mask_type='object',
+    model_config=dict(mode='regression', task_level='graph', return_type='raw')
+)
+
+print("Running GNNExplainer (learning masks for mutual information)...")
+explanation = explainer(data.x_dict, data.edge_index_dict)
+print("Explanation completed.")
+
+feat_names = {
+    'Zone': ['area', 'volume', 'height', 'LPD', 'PV_share'],
+    'Envelope': ['area', 'tilt', 'azimuth', 'is_wall', 'is_roof', 'is_floor', 'is_window', 'U-value', 'Reflectance', 'SHGC', 'ShapeIndex'],
+    'System': ['cooling_cap', 'heating_cap', 'COP', 'Cool_SP', 'Heat_SP']
+}
+
+print("\n--- Top Node Features by Mask Score ---")
+for nt in ['Zone', 'Envelope', 'System']:
+    mask = explanation.node_mask_dict[nt].cpu().numpy()
+    mean_mask = mask.mean(axis=0)
+    top_idx = mean_mask.argsort()[::-1][:3]
+    print(f"\n{nt} Features:")
+    for i in top_idx:
+        print(f"  - {feat_names[nt][i]}: {mean_mask[i]:.4f}")
+```
+
+### [Markdown Cell 31]
+> ### 📊 FIGURE SLOT — **Fig. 12 · Global feature importance per node type** *(PART 3)*
+> Barh mask score GNNExplainer nhóm theo Zone/Envelope/System (kiểu GAT-BEM Fig.7–8) + SHAP beeswarm trên global params (XGBoost surrogate đối chiếu, `div_cmap` xanh↔đỏ). **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 13 · Edge-type (connection) importance** *(PART 3)*
+> Bar importance theo edge type (Zone–Envelope, Zone–System, Zone–Zone adjacency…) từ `explanation.edge_mask_dict` — GAT-BEM Fig.9. Đây là bằng chứng "bảo toàn quan hệ không gian". **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 14 · Spatial explanation map** *(PART 3 — contribution figure)*
+> Floor-plan/axonometric DOE Medium Office, zone tô màu theo node-importance (`seq_cmap`) + top-k edges vẽ đè; kèm (b) scatter centrality-vs-importance (GAT-BEM Fig.10 "thermal centrality"). **Status:** ⬜
+
+

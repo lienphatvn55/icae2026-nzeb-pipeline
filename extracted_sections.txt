@@ -1,0 +1,195 @@
+Cell 0:
+# PI-HGAT NZEB Retrofit Pipeline — ICAE 2026
+
+**Integrated decision-support framework for hot-humid NZEB office retrofits, Ho Chi Minh City.**
+Case study: DOE Medium Office prototype (4,982 m2), baseline EUI 122.1 kWh/m2/yr, Koppen Aw.
+
+This notebook is the single end-to-end runner; it mirrors the framework figure
+(`results/figures/0. FRAMEWORK DEMO.png`) part by part:
+
+| Framework block | Notebook sections | Key inputs | Outputs |
+|---|---|---|---|
+| **PART 0 — Data Input (Building/Urban/Graph)** | S1 | `data/registry/neo4j_query_table_data_2026-6-2.json` | PyG-ready KG topology |
+| **PART 0 — Simulation & Calibration (offline)** | S2–3 | `data/aggregated_LHS_results.csv` (9 climate x 250 LHS, built by `scripts/data/aggregate_lhs_results.py`) | X (11 features), Y (EUI) |
+| **PART 1 — AI-based Prediction** | S4–S10 | HeteroData graphs | trained PI-HGAT + baselines, Fig. 5 |
+| **PART 2 — Multi-Objective Optimization** | S11–S13 | surrogate f1 + `pi_hgat/objectives.py` (f2 LCC, f3 LCE) | Pareto set, TOPSIS ranking, Fig. 6–9, 11 |
+| **PART 3 — XAI & Recommendations** | S14 | trained model + Pareto optimum | GNNExplainer subgraph, trade-off report |
+
+**Economic/LCA basis (locked 2026-07-02):** 20-yr study period, 8% real discount, elec 0.137 USD/kWh
+(EVN before-VAT), grid EF 0.6592 kgCO2e/kWh (MONRE 1726/2024), PV yield 1,420 kWh/kWp/yr.
+All constants live in `pi_hgat/config.py`; sourced registry: `data/jEPlus-LHS/ICAE2026_DataRegistry_P1-P9.xlsx`.
+
+---
+Cell 2:
+## PART 0 · Section 1 — Data Input: Knowledge Graph (BIM/Revit -> Neo4j -> PyG)
+Loads the heterogeneous KG exported from Neo4j (nodes: Building/Storey/Zone/Surface/System;
+edges: containment/adjacency) and extracts the zone topology used by the graph builder.
+
+---
+Cell 5:
+> ### 📊 FIGURE SLOT — **Fig. 2 · KG schema & case-study building** *(PART 0)*
+> **Content:** (a) DOE Medium Office 3D + HCMC context; (b) hetero-KG schema (node types Zone/Envelope/Material/System/Climate, edge types + count outputted above). Inspired by Fig. 4 (BCGS) of the GAT-BEM 2025 paper.
+> **Data:** cell S1 (`baseline_data` node/edge counts). **Style:** `fig_style.py`, node types = categorical slots. **Status:** ⬜ chưa dựng
+
+---
+Cell 8:
+## PART 0 · Section 2 — Simulation Results: jEPlus LHS (9 climate scenarios x 250 samples)
+Loads `data/aggregated_LHS_results.csv` — REAL EnergyPlus results aggregated from
+`data/jEPlus-LHS/{1_Baseline, 2..9}/LHS-*/eplustbl.csv` by `scripts/data/aggregate_lhs_results.py`
+(2,250 rows; weather: TMYx 2011-2025 baseline + 8 CMIP6 futures, ACCESS-CM2 / MRI-ESM2-0 x SSP245/585 x 2050s/2080s).
+
+**Target = GROSS site EUI** (`EUI_kWh_m2`, straight from EnergyPlus). P8 PV / P9 BESS are
+demand-side-invisible and are **excluded from both X and Y** — they enter f1/f2/f3 only in S11
+via the single `objectives.net_energy()` model (review fix B1/B4).
+Climate is encoded as the global feature `Climate_DeltaT` (delta-morphing dT per scenario).
+
+⚠ Data note: the same 249 unique parameter combos repeat across all 9 scenarios (paired design).
+The scenario-group split below therefore tests **climate transfer** only; the dual-axis
+evaluation (GroupKFold by combo + leave-one-scenario-out) is Step-3 work.
+---
+Cell 12:
+## PART 0 · Section 3 — Climate-Change Fingerprint (Fig. C1–C3)
+The paired LHS design (same 249 combos in all 9 scenarios) enables a **within-combo** climate
+sensitivity analysis — a stronger design than independent samples:
+- **Fig. C1:** gross-EUI distribution per scenario (ordered by ΔT) — the whole distribution shifts up.
+- **Fig. C2:** paired ΔEUI vs ΔT per combo, with the mean cooling-penalty slope (kWh/m²/yr per °C).
+- **Fig. C3:** end-use decomposition (baseline vs median future vs worst 2080s) — cooling drives the increase.
+---
+Cell 16:
+## PART 1 · Section 4 — Build PyG HeteroData Dataset
+One heterogeneous graph per LHS sample: type-specific node features (zone geometry, envelope
+parameters, system efficiencies) + global retrofit vector. Train/val/test = 70/15/15.
+
+---
+Cell 20:
+## PART 1 · Section 5 — Define & Initialize PI-HGAT
+Heterogeneous Graph Attention Network with physics-informed loss (`pi_hgat/models.py`,
+`pi_hgat/physics_loss.py`).
+
+---
+Cell 24:
+## PART 1 · Section 6 — Train PI-HGAT (Adam + LR scheduler + early stopping)
+
+---
+Cell 28:
+## PART 1 · Section 7 — Baseline Surrogates (XGBoost, ANN/MLP, Linear Regression)
+Same X/Y splits as PI-HGAT for a fair benchmark.
+
+---
+Cell 32:
+## PART 1 · Section 8 — Evaluation & Benchmark (R2, RMSE, MAE)
+Produces the surrogate comparison table (paper Table: model benchmark).
+
+---
+Cell 37:
+## PART 1 · Section 9 — Visualization: Prediction Performance
+Produces **Fig. 3** (actual vs predicted). Save outputs to `results/figures/`.
+
+---
+Cell 39:
+> ### 📊 FIGURE SLOT — **Fig. 3 · Predicted vs Actual (4 panels)** *(PART 1)*
+> 4 panel PI-HGAT ★ / XGBoost / ANN / LR on the test set; identity line + R² annotation; màu theo `MODEL_COLORS`. Thay thế `Fig3_PredictionPerf.png` (mock). **Data:** `hgat_t/hgat_p`, `Yte`, `xgb_p`, `ann_p`, `lr_p`. **Status:** ⬜ pending retraining on real data
+>
+> ### 📊 FIGURE SLOT — **Fig. 4 · Benchmark & robustness (2×2)** *(PART 1)*
+> (a) bars R²/RMSE/MAE/MAPE có value label; (b) boxplot R² qua 10–20 seeds; (c) train-vs-test R² (overfitting check); (d) train time (log s). Gộp Table-6-style của GAT-BEM vào 1 hình. **Cần thêm code:** vòng lặp multi-seed + timing. **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 5 · Learning curve — sample-size sufficiency** *(PART 1)*
+> CV R² theo n_samples (250 → 2,250, theo scenario-block) + dải ±1σ; chứng minh 250 LHS/climate là đủ (250/62,500 = 0.4% full factorial). **Cần thêm code:** learning-curve loop trên GBR/PI-HGAT. **Status:** ⬜
+
+---
+Cell 42:
+## PART 1 · Section 10 — Robustness & Validation Studies (Fig. 4, Fig. 5, Tables)
+Reads artifacts from `scripts/analysis/step3_robustness.py` (run offline:
+`python scripts/analysis/step3_robustness.py --study all`, ~50 min GPU):
+- **Fig. 4 (2×2):** test R² mean±σ (10 seeds) · seed boxplot · train-vs-test R² (overfitting) · training time — review plan Step 3.
+- **Fig. 5:** sample-size learning curve (25→249 combos/scenario, tested on 2 held-out climate scenarios) — evidence for the "is 250 LHS/scenario enough?" question.
+- **Tables:** LOSO 9-fold per-scenario MAE (climate generalization, incl. SSP585-2080s ΔT=4.47) · held-out-combo split (parameter generalization) · physics monotonicity-loss ablation.
+---
+Cell 46:
+## PART 2 · Section 11 — NSGA-III Problem Definition (f1 net-import EUI | f2 LCC | f3 LCE)
+**Integer level-index encoding (review fix B2/B3):** each decision variable is the retrofit
+level of one measure on the TRUE simulated jEPlus ladder (`config.P*_LEVELS`, 0 = baseline).
+This keeps the surrogate strictly in-distribution, keeps P4 glazing a physical catalog pair
+(U, SHGC, VT), and matches the registry cost/carbon inventory exactly (L0..Ln).
+
+**Energy flow (review fix B1):** surrogate → GROSS EUI → `objectives.net_energy()` (PV/BESS,
+zero-export self-consumption, applied ONCE) → f1 = net-import EUI; f2 = LCC (Kadric Eq. 6–9,
+OC on imports); f3 = LCE (EN 15978 A1–A3…C1–C4, B6 on imports). 20-yr / 8%-real basis.
+Climate fixed to baseline (ΔT = 0) here; future-climate MOO (ΔT for 2050s/2080s) is Step-4 work.
+---
+Cell 49:
+> ### 📊 FIGURE SLOT — **Fig. 6 · Component lifespans vs 20-yr study period** *(PART 2, setup)*
+> Barh lifespan P1–P9 (`config.LIFESPANS_SHORT`) + vạch dọc 20 năm; đánh dấu các measure có replacement (P5@15, P7@12, P9@15). Số liệu THẬT từ config — có thể vẽ ngay. **Status:** ⬜ dễ, làm ngay được
+>
+> ### 📊 FIGURE SLOT — **Fig. 7 · Embodied LCE by module @ max renovation** *(PART 2, setup)*
+> Stacked bar 5 module embodied (A1-A3→C1-C4, ordinal blues `LCA_COLORS`), **B6 loại ra** (theo Kadrić Fig.5); mỗi measure P1–P9 một cột. **Data:** `obj_calc.calculate_lca_breakdown()` @ level max. **Status:** ⬜
+
+---
+Cell 52:
+## PART 2 · Section 12 — Run NSGA-III
+Integer-encoded NSGA-III (IntegerRandomSampling + SBX/PM with RoundingRepair).
+Pareto front and convergence are plotted AFTER S13 (Fig. 8 needs TOPSIS closeness).
+---
+Cell 56:
+## PART 2 · Section 13 — Entropy-TOPSIS Ranking & NZE Assessment
+Single TOPSIS implementation (`entropy_topsis`) — Fig. 8/9/11 all reuse `closeness`/`best_idx`
+computed here (the old duplicated copy inside the Fig. 8 cell was removed).
+NZE classification comes from `objectives.assess_nze()` (same `net_energy()` model as f1/f2/f3).
+Saves `results/pareto_solutions.csv` (level indices + physical values + F + closeness + NZE class).
+---
+Cell 59:
+> ### 📊 FIGURE SLOT — **Fig. 8 · Pareto front + convergence** *(PART 2)*
+> (a) 3D Pareto (EUI–LCC–LCE) màu TOPSIS (`seq_cmap`); (b) hypervolume theo generation (cần `save_history=True` trong `minimize`). **THAY THẾ** Fig7 mock "evolution" cũ — hypervolume là bằng chứng hội tụ chuẩn hơn scatter. **Status:** ⬜
+
+---
+Cell 61:
+> ### 📊 FIGURE SLOT — **Fig. 9 · Pairwise Pareto colored by TOPSIS** *(PART 2)*
+> 3 panel EUI–LCC / EUI–LCE / LCC–LCE, màu = closeness (`seq_cmap`), ★ = compromise. GỘP Fig3 (pairwise trơn) vào đây — Fig3 cũ **bỏ** vì trùng. **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 10 · LCE by module: Baseline vs Optimal vs Max** *(PART 2)*
+> GỘP Fig5-cũ + Fig10-cũ thành 1 hình 3 cột nhóm (module màu `LCA_COLORS` + B6 aqua) — kể trọn câu chuyện NZEB-paradox trong 1 hình. **Data:** `calculate_lca_breakdown()` cho 3 cấu hình. **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 11 · Renovation-level heatmap of Pareto set** *(PART 2)*
+> Heatmap (P1–P9 × solutions xếp theo TOPSIS, `seq_cmap`, level chuẩn hóa 0–1). **Kadrić Fig.11.** **Status:** ⬜
+>
+> **💾 REQUIRED:** lưu `res.X`, `res.F`, `closeness` → `results/pareto_solutions.csv` so all figures are reproducible.
+
+---
+Cell 63:
+> ### 📊 FIGURE SLOT — **Fig. 10 · LCE by module: Baseline vs Optimal vs Max** *(PART 2)*
+> Grouped bars per EN 15978 module (incl. **B6** operational) for 3 configurations — the
+> NZEB-paradox story: deep retrofit trades operational carbon (B6↓) for embodied carbon (A/B4/C↑).
+> Data: `calculate_lca_breakdown()` @ surrogate-predicted gross EUI. **+ Table:** top-10 Pareto.
+---
+Cell 66:
+## PART 2 · Section 14 — Decision Sensitivity & Climate-Aware MOO (Step 4)
+**(a) TOPSIS weight sensitivity:** best compromise under entropy / equal / cost-priority /
+carbon-priority weights — shows how robust the recommendation is to the weighting choice.
+**(b) Climate-aware optimization (Fig. C5):** NSGA-III re-run at ΔT = median-future and
+worst-2080s (both within the trained ΔT range 0–4.47) — the paper's key novelty payoff:
+*how should the retrofit package change when designing for future climate?*
+---
+Cell 70:
+## PART 3 · Section 15 — Spatial Explainability (GNNExplainer)
+Explains the recommended retrofit package: which zones/surfaces/edges drive the EUI
+prediction (paper Fig.: explanation subgraph + trade-off report).
+
+---
+Cell 73:
+> ### 📊 FIGURE SLOT — **Fig. 12 · Global feature importance per node type** *(PART 3)*
+> Barh mask score GNNExplainer nhóm theo Zone/Envelope/System (kiểu GAT-BEM Fig.3–8) + SHAP beeswarm trên global params (XGBoost surrogate đối chiếu, `div_cmap` xanh↔đỏ). **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 13 · Edge-type (connection) importance** *(PART 3)*
+> Bar importance theo edge type (Zone–Envelope, Zone–System, Zone–Zone adjacency…) từ `explanation.edge_mask_dict` — GAT-BEM Fig.9. Đây là bằng chứng "bảo toàn quan hệ không gian". **Status:** ⬜
+>
+> ### 📊 FIGURE SLOT — **Fig. 14 · Spatial explanation map** *(PART 3 — contribution figure)*
+> Floor-plan/axonometric DOE Medium Office, zone tô màu theo node-importance (`seq_cmap`) + top-k edges vẽ đè; kèm (b) scatter centrality-vs-importance (GAT-BEM Fig.10 "thermal centrality"). **Status:** ⬜
+
+---
+Cell 76:
+## PART 3 · Section 16 — Spatial Explanation Map & Explainer Fidelity (Fig. 14)
+**(a)** DOE Medium Office floor plans (schematic) with zones coloured by mean GNNExplainer
+importance — the "where does the model look" contribution figure (GAT-BEM Fig. 10 style).
+**(b)** zone importance vs KG degree centrality. **Table:** Fidelity+/− and sparsity of the
+explanation (top-25% edges) — quantitative evidence the explanation is faithful.
+---

@@ -1,0 +1,13 @@
+# --- Raw jEPlus/EnergyPlus run outputs: 57k files, fully regenerable from IDF+EPW.
+# The aggregated CSVs in data/ ARE tracked; the sourced registry Excel is kept below.
+data/jEPlus-LHS/**
+!data/jEPlus-LHS/*.xlsx
+
+# --- Python / Jupyter noise
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# --- OS / editor noise
+Thumbs.db
+.DS_Store

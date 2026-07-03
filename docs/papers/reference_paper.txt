@@ -1,0 +1,1440 @@
+
+================================================================================
+PAGE 1
+================================================================================
+Building energy modeling with replaceable components using graph 
+attention networks
+Yanting Shen a, Junlin Zhu a, Qibo Zhang a, Chenyu Huang a, Jiahong Ye a, Jiawei Yao a,b,*
+a College of Architecture and Urban Planning, Tongji University, Shanghai, China
+b Key Laboratory of Ecology and Energy Saving Study of Dense Habitat, Ministry of Education, Shanghai 200092, China
+A R T I C L E  I N F O
+Keywords:
+Graph Neural Networks (GNN)
+Graph Attention Network (GAT)
+Building Energy Modeling (BEM)
+Knowledge embedding
+Model interpretability
+Design optimization
+A B S T R A C T
+Building energy modeling (BEM) are key to optimizing building performance. While data-driven BEM models 
+have significantly accelerated this process, they have limitations in balancing modeling accuracy and 
+component-level interpretability. This study proposes a graph attention network (GAT) for editable component- 
+based building energy prediction and feature interpretation analysis. We used 3,000 residential buildings with 
+geometric and energy usage information via a parametric method and EnergyPlus. By treating building com­
+ponents (walls, doors, windows, etc.) as nodes and their physical connections as edges. We created a knowledge 
+embedding method to represent the 3D model and thermal relationships of real-world. An Enhanced GAT was 
+used for graph-level regression, and GCNExplainer was applied for component-level interpretation.The results 
+show a 13% accuracy improvement over end-to-end models under the climatic conditions of Changsha, China. 
+The interpretability analysis reveals that geometric features and component connections have a greater impact 
+on energy usage than material performance. Finally, a practical case demonstrates the proposed method’s po­
+tential for energy-efficient design and retrofit. This work highlights the importance of spatial information 
+embedding in BEM and validates its feasibility in decision-making.
+1. Introduction
+In 2022, the International Energy Agency (IEA) reported that 
+building operations accounted for 30 % of global final energy con­
+sumption and 27 % of total energy-related CO2 emissions in 2021. 
+Among these, 8 % came from direct emissions, and 19 % resulted from 
+electricity and heat production [1]. Residential buildings, compared to 
+non-residential ones, showed higher energy consumption and CO2 
+emissions [2]. Globally, the construction industry is transitioning from 
+prioritizing new developments to focusing on the existing building 
+stock. To achieve carbon neutrality, it is necessary not only to pursue 
+low-energy design strategies for new buildings but also to promote green 
+retrofitting of existing ones [3].
+Many studies have focused on energy reduction through improve­
+ments in building operations [4,5], building materials [6,7], and occu­
+pant behavior [8,9]. However, relatively little attention has been paid to 
+how spatial design affects energy use. Research has shown that spatial 
+configuration can have a more significant impact on building energy 
+performance than other design factors. Considerable energy savings can 
+be achieved through improved spatial efficiency and well-planned 
+architectural layouts [10], indicating the need for evaluation ap­
+proaches that integrate spatial efficiency into green building design and 
+retrofitting.
+Building Energy Modeling (BEM) has been widely applied in both 
+academic research and practical engineering for low-carbon and net- 
+zero building design. In this study, data from BEM are used to 
+construct a Building Component Graph System (BCGS). Comparing 
+graph-based Graph Neural Networks (GNNs) with 2D array-based ma­
+chine learning models, the proposed system shows superior energy 
+consumption prediction and reliable real-world application.
+2. Background
+2.1. Building energy modeling (BEM)
+In general, common BEM approaches can be categorized into three 
+types: (1) physics-based (white-box), (2) data-driven (black-box), and 
+(3) combined physics and data-driven (gray-box).
+Mature physics-based models include DOE-2 [11], EnergyPlus [12], 
+and TRNSYS [13]. These models leverage computational power to 
+* Corresponding author at: College of Architecture and Urban Planning, Tongji University, Shanghai, China.
+E-mail address: jiawei.yao@tongji.edu.cn (J. Yao). 
+Contents lists available at ScienceDirect
+Energy & Buildings
+journal homepage: www.elsevier.com/locate/enb
+https://doi.org/10.1016/j.enbuild.2025.116584
+Received 13 August 2025; Received in revised form 10 October 2025; Accepted 12 October 2025  
+Energy & Buildings 349 (2025) 116584 
+Available online 16 October 2025 
+0378-7788/© 2025 Elsevier B.V. All rights are reserved, including those for text and data mining, AI training, and similar technologies. 
+
+================================================================================
+PAGE 2
+================================================================================
+simulate multiphysics systems governed by complex physical laws. 
+Their primary advantage lies in the high fidelity of physical simulations. 
+However, they require a large amount of detailed input data, including 
+building physical parameters, environmental conditions, and opera­
+tional settings, to solve dynamic balance equations. The results are 
+sensitive to the accuracy of these inputs, and the computational burden 
+is often significant. In the era of big data, this limitation has led to the 
+rise of data-driven approaches that aim to bypass complex physics-based 
+calculations while maintaining reliability.
+Black-box models have benefited from the rapid advancement of 
+machine learning (ML) and artificial intelligence (AI) over the past two 
+decades. ML algorithms use internal hidden layers and activation func­
+tions to capture nonlinear relationships in data. In recent years, there 
+has been growing research interest in using ML for building energy 
+prediction [15]. Common ML techniques encompass decision tree 
+models [16], ensemble learning approaches [17], Bayesian networks 
+[14], graph neural networks [18], deep neural networks [19,20], and 
+recurrent neural networks [21]. Although black-box models can deliver 
+rapid computations and achieve satisfactory accuracy, they also come 
+with inherent limitations. Black-box models are fast and accurate but 
+require structured 2D data and lack robustness in extrapolation with 
+missing samples. The opacity of these models and the inflexible design of 
+early standalone ML algorithms continue to limit their adaptability.
+The gray-box model, combines physical priors (white-box) and data- 
+driven calibration (black-box). A classic example is the RC network 
+model, which compares building thermodynamics to an electrical cir­
+cuit, using thermal resistance for heat transfer and thermal capacitance 
+for heat storage. The model structure is based on physical knowledge 
+(white-box), while key parameters are calibrated with historical data 
+(black-box). This approach ensures interpretability and reduces reliance 
+on detailed data and computational complexity.
+Building on the gray-box model, Raissi et al. proposed the Physics- 
+Informed Neural Network (PINN) to better integrate physical knowl­
+edge with machine learning, incorporating nonlinear partial differential 
+equations (PDEs) into supervised learning tasks [22]. This sparked the 
+emergence of knowledge-embedded machine learning, commonly 
+referred to as Physics-Informed Machine Learning (PIML). PIML enables 
+the integration of physical knowledge into ML models at various stages, 
+including inputs, architecture, and outputs. These methods go beyond 
+correcting physical formulas to include physically inspired, guided, in­
+tegrated, or aware network designs. Any approach that improves the 
+physical consistency of ML predictions can be regarded as knowledge- 
+embedded [23].
+For example, Chen proposed a component-based machine learning 
+(CBM) framework that encodes building structure knowledge as se­
+mantic information within the model architecture. This approach 
+significantly improved robustness in building energy prediction [24]. 
+Similarly, Jiang developed a modularized neural network (ModNN) that 
+incorporates physical priors such as heat balance equations and con­
+sistency constraints into a data-driven architecture, enabling cross- 
+building generalization [25].
+However, existing knowledge embedding methods focus on the 
+building scale, making it difficult to analyze component-level physical 
+mechanisms, which limits model generalization and accuracy. There­
+fore, a modeling approach that ensures physical consistency and enables 
+component-level resolution is required.
+2.2. Graph data and graph modeling
+2.2.1. Implicit representation of architectural space
+ML can learn from data without predefined rules. This gives them the 
+potential to simulate human-like design thinking in generating spatial 
+layouts. However, the learning process is often implicit and lacks logical 
+or interpretable representations of spatial structures. Current research 
+mainly focuses on two-dimensional (2D) spatial analysis. Typical tasks 
+include floor plan generation [26–28], recognition and error detection 
+[27], and façade rendering [29]. Some methods try to extract height 
+information using depth maps or sliced 2D images [30,31], but these 
+often result in incomplete or missing three-dimensional (3D) details.
+Recent research has begun to explore 3D architectural representa­
+tions using formats such as voxels [32], point clouds [33], neural radi­
+ance fields [34], and function-based representations [31]. However, 
+these methods often lack interpretability and operational control, which 
+limits the application of ML in 3D spatial reasoning [35].
+Architectural design involves many types of heterogeneous data. In 
+energy optimization, design workflows require methods that are precise, 
+detailed, flexible, and easy to control. To meet these needs, topological 
+representations are essential. They help capture the full 3D spatial re­
+lationships within buildings.
+2.2.2. Graph for spatial knowledge embedding
+Graph is a specialized data structure that offers new ways to manage 
+complex relationships in architecture and urban design. It also expands 
+how ML can be used in design and engineering. Unlike 2D pixels or 3D 
+voxels, graphs capture both detailed elements (nodes) and their logical 
+connections (edges), preserving the structural logic of spatial layouts.
+Graph-based methods are effective in capturing topology, hierarchy, 
+and relationships between elements, especially in floor plan analysis. 
+For example, Nelson Nauata et al. proposed a graph-constrained 
+generative adversarial network for generating residential floor plans 
+[36]. Ramon Elias Weber et al. developed a hypergraph model to 
+represent spatial organization in floor plans, enabling geometric opti­
+mization for better building performance [10]. In 3D applications, 
+Zhong et al. introduced the Building-GNN framework, which supports 
+designer interaction and co-design for generating voxel-based building 
+prototypes [32].
+2.3. BEM using graph neural networks
+In low-carbon BEM, GNNs provide a promising approach to better 
+capture the underlying building physics. Building components and their 
+interconnections significantly affect energy performance through con­
+duction, convection, and radiation. Recent studies have demonstrated 
+this potential. For example, Hu et al. constructed urban building graphs 
+based on solar shading relationships and improved the accuracy of city- 
+scale energy prediction [20]. Jia et al. represented building thermal 
+zones as graph nodes and enhanced thermal load forecasting [18]. These 
+pioneering studies highlight the potential of graph structures in 
+modeling complex spatial dependencies. However, they generally rely 
+on specific relational assumptions, such as shading or zone partitioning, 
+and remain at macro scales where physical consistency with real designs 
+is still limited.
+Component-level influences are particularly significant. For 
+example, interior partitions can modify daylight distribution and airflow 
+patterns, thereby influencing lighting and ventilation performance and, 
+ultimately, the overall building energy consumption.. Therefore, relying 
+only on bulk thermal parameters to build end-to-end metamodels [37] 
+cannot fully address the complexities of new construction, retrofitting, 
+and extension projects. To overcome this limitation, we propose a 
+method that encodes both the connectivity and thermo-physical attri­
+butes of components. Nodes represent major interior and exterior ele­
+ments including walls, roofs, slabs, doors, and windows. Unlike previous 
+approaches that require all graphs to contain the same number of nodes, 
+our formulation allows variable-sized graphs. The model predicts whole- 
+building EUI at the graph level, while retaining flexibility and inter­
+pretability at the component level.
+However, performance evaluation alone cannot fully inform design 
+decisions in real-world practice. Architects and engineers must often 
+navigate trade-offs between energy performance, financial feasibility, 
+and occupant comfort. These criteria are not only interrelated but also 
+inherently conflicting—improvements in one often come at the cost of 
+another. The integration of multi-objective optimization (MDO) is not 
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+2 
+
+================================================================================
+PAGE 3
+================================================================================
+merely a complementary step, but a necessary mechanism to reflect the 
+actual decision-making landscape in performance-driven building 
+design.
+Energy use, construction cost, and daylight availability were chosen 
+as the optimization objectives, as they collectively represent the envi­
+ronmental, economic, and human-centered priorities critical to early- 
+stage building design. Multi-objective evolutionary algorithms such as 
+NSGA-II are widely adopted because of their robustness in nonlinear and 
+high-dimensional problems [38]. From early-stage building-form energy 
+optimization to more recent urban-scale energy planning and building 
+cluster design, the NSGA-II has been widely applied to multi-objective 
+optimization problems involving energy, environment, and comfort 
+[39,40]. Therefore, integrating the BCGS-GAT prediction model with 
+the NSGA-II algorithm is not only a logical choice to validate the engi­
+neering application value but also ensures compatibility with existing 
+performance-driven design workflows. As the practical validation is 
+conducted on the Grasshopper platform, employing the Wallacei plugin, 
+which is based on NSGA-II, is a directly feasible approach.
+2.4. Research objectives
+In summary, this study identifies three critical research gaps that 
+remain unaddressed: 
+The lack of data representation methods capable of preserving both 
+the three-dimensional detail and spatial attributes of buildings.
+Limited model flexibility in adjusting structural details, which con­
+strains applicability in real-world engineering.
+A shortage of knowledge-informed models that can simultaneously 
+ensure both prediction accuracy and interpretability.
+We acknowledge that the thermal processes of a single building are 
+physically explicit and interpretable. However, within high-dimensional 
+design spaces that involve numerous variable parameters, the relation­
+ship between design decisions and performance outcomes becomes 
+highly complex and difficult to interpret directly. Traditional physics- 
+based simulations provide accurate results but impose a high compu­
+tational cost, which limits their feasibility for large-scale exploration. 
+The primary goal of this study is to develop a data-driven framework 
+that integrates predictive efficiency with transparent decision logic, 
+enabling rapid evaluation and optimization within architectural design 
+practice.
+To address these challenges, this research proposes the Building 
+Component Graph System(BCGS). The core advantage of it is the ability 
+to replace components flexibly without affecting the overall structure. 
+Although explicit mechanical constraints are not directly embedded, the 
+structural encoding implicitly preserves physical consistency. The model 
+considers the effects of internal partitions on solar radiation and airflow. 
+It also represents three-dimensional features, including vertical differ­
+ences between spaces. These improvements increase modeling accuracy. 
+The model is tested in a typical residential unit. When combined with a 
+multi-objective optimization algorithm, it shows clear potential for 
+practical use in energy retrofit design. We developed an interactive web 
+platform (https://bcgs.work/).
+3. Method
+This study aims to predict and optimize residential building energy 
+use through BCGS, in which nodes represent architectural components 
+and edges denote their physical connections. 3,000 residential models 
+with detailed component parameters were sampled using Planfinder and 
+simulated using the Ladybug within the Grasshopper platform. Each 
+node encodes geometric, thermal, and surface-level attributes, enabling 
+the graph to reflect both spatial partitions and construction heteroge­
+neity. We then apply a GNN for energy prediction, comparing its per­
+formance against alternative GNN architectures and conventional end- 
+to-end models. To enhance interpretability, GNNExplainer identifies 
+key components and influential features via structural and feature-level 
+perturbations (Fig. 1). Finally, Wallacei is employed for multi-objective 
+optimization on a representative residential unit, jointly balancing EUI, 
+construction cost, and useful daylight illuminance (UDI), thereby 
+demonstrating the model’s practical relevance in energy-conscious 
+design.
+3.1. Data Setup
+3.1.1. Data collection
+This study focuses on residential buildings, with an emphasis on 
+single-unit apartments, which represent the largest share of total 
+building energy consumption [2]. The analysis excludes overall building 
+layout, structural systems, and mechanical systems such as HVAC. All 
+data were generated within Rhino 8 using the Grasshopper platform and 
+the Planfinder plugin [41]. Planfinder is an industrial-grade tool that 
+utilizes a floor plan database to algorithmically retrieve and adapt 
+existing layouts for new design configurations. By specifying contours 
+and entry points, users can generate viable residential floor plans 
+through a parametric process that has been validated in previous studies 
+[42,43]. The purpose of using Planfinder was to rapidly generate diverse 
+yet rational floor plan samples for model training and validation. This 
+stage represents a sampling process, focusing on diversity and ratio­
+nality, rather than a continuous parametric design transformation. 
+Using this method, we generated 1,000 unique floor plans, each anno­
+tated with labeled functional zones (Fig. A1).
+We applied two experimental treatments to each of the 1,000 floor 
+plans. The first removed all interior walls, keeping only the outer en­
+velope. This was done to test how interior partitions affect energy pre­
+dictions. The second kept an average ceiling height, but varied the 
+heights of different functional zones. This helped assess the error caused 
+by assuming uniform height.
+These treatments produced three data groups: 
+• None – no interior walls, no height variation;
+• Interior Wall – with interior walls, but uniform height;
+• Interior Wall & Height – with both interior walls and height 
+variation.
+In total, we generated 3,000 residential samples with diverse spatial 
+characteristics (Fig. 2). To ensure consistency across the dataset, all 
+functional zones were assigned identical operational settings (Table 1). 
+These configurations are based on the DOE Commercial Prototype 
+Building Models and ASHRAE Standard 90.1 for midrise apartments. 
+They include standardized temperature setpoints, HVAC schedules, in­
+ternal loads, occupancy patterns, and equipment usage profiles (see 
+Supplementary Materials).
+This study focuses on testing the feasibility of the proposed BCGS 
+framework, so generalized climate adaptation is not yet considered. All 
+simulations use the EPW weather file for Changsha, China (28.2282◦N, 
+112.9388◦E), obtained from the Ladybug EPW map. Changsha has a 
+humid subtropical monsoon climate, with hot and humid summers and 
+cold, damp winters. These conditions place high thermal demands on 
+building envelopes. Future studies will extend the framework to other 
+climate zones.
+All 3,000 samples were simulated individually using the Ladybug 
+plugin in Grasshopper to generate accurate, physics-based energy data. 
+The simulation relies on two established engines: EnergyPlus for energy 
+modeling and Radiance for daylight analysis. Both are widely recog­
+nized in the BEM research community.
+3.1.2. Building component graph system (BCGS)
+In the BCGS, building components are encoded as graph nodes, while 
+their physical connections are modeled as edges (Fig. 3). Each node 
+contains three types of attributes: geometric, thermal, and sub-surface 
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+3 
+
+================================================================================
+PAGE 4
+================================================================================
+(Table 2). Geometric attributes include area, shape index, and orienta­
+tion (east, south, west, north). Since wall heights may vary across zones, 
+wall shapes are not always rectangular. A shape factor is therefore 
+introduced to represent wall geometry in a consistent form. As Plan­
+finder produces orthogonal residential layouts, wall orientation is 
+encoded as a categorical variable to reflect spatial direction within the 
+graph.
+Thermal properties include type, conductivity, thickness, and 
+absorptance values for thermal, solar, and visible radiation. These at­
+tributes also specify the exposure condition (e.g., outdoors, adjacent 
+surface, or ground), which indicates the mode of heat transfer. In 
+addition, the structural classification—such as exterior wall, interior 
+wall, floor, or roof—implicitly encodes the spatial position of each 
+component.
+The Subsurface information shows how building components are 
+encoded as graph nodes, including common types such as windows and 
+doors. By defining subsurface type, area, thermal transmittance, and 
+SHGC, the details of the surface can be flexibly replaced while main­
+taining strong physical consistency.
+In the edge configuration, all component-to-component connections 
+are assigned a value of 1 to expand the range of influence while mini­
+mizing computational complexity.
+Traditional end-to-end models rely on homogenized parameters for 
+energy features, such as uniform thermal conductivity and averaged 
+window-to-wall ratios, which limits their ability to capture vertical 
+spatial variations. In contrast, graph-based structures handle heteroge­
+neous data more effectively. Internal partitions can be added or removed 
+by modifying graph nodes, and component-specific thermal properties 
+or window configurations can be flexibly replaced without altering the 
+overall model structure.
+All data were generated using the Ladybug plugin on the Grass­
+hopper platform in Rhino 8. For each of the 3,000 design cases, 
+component parameters were randomly sampled within predefined 
+ranges (Table 2), and the resulting values were assigned to individual 
+elements. Using Python scripts in Grasshopper, physical adjacency be­
+tween components were then parsed and converted into graph edges.
+Fig. 1. Research pathway.
+Fig. 2. Comparison of three sets of data models.
+Table 1 
+EnergyPlus simulation parameter settings.
+Category
+Parameter
+Setting value/Description
+Meteorological 
+conditions
+Meteorological 
+parameters
+Changsha, Hunan Province, China 
+(Data source: ladybug epw map)
+HVAC system
+System type
+HVACTemplate:System: 
+IdealLoadsAirSystem (ideal load 
+system)
+System efficiency
+Heating/Cooling COP = 1 (virtual 
+system, 100 % efficiency)
+Simulation control
+Time step
+4 Timesteps per Hour
+Simulation period
+Year-round (January 1 −
+December 31)
+Thermal balance 
+algorithm
+Conduction Transfer Function 
+(CTF)
+Solar radiation 
+calculation
+Full Interior and Exterior
+Infiltration and 
+ventilation
+Design penetration
+0.3 ACH (Air Changes per Hour)
+Interior loads
+personnel/lighting/ 
+equipment/hot water
+See Appendix 1
+Set point
+Heating/cooling
+See Appendix 1
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+4 
+
+================================================================================
+PAGE 5
+================================================================================
+3.2. Model architecture
+3.2.1. Graph attention network (GAT)
+We propose an Enhanced GAT for graph-level regression tasks. The 
+model includes two graph attention layers and two fully connected 
+prediction layers. It also contains two layer normalization modules, an 
+average-max pooling layer, and a dropout module for regularization. 
+Several optimization strategies are integrated, such as residual connec­
+tions, multi-head attention, and skip connections (Fig. 4). The model 
+was implemented in Python using the PyTorch and PyTorch Geometric 
+libraries. Training was performed on a system with an Intel Core i7 
+processor and an NVIDIA RTX 3050Ti GPU.
+The attention mechanism is implemented through the GATConv 
+module. It aggregates information from neighboring nodes using learned 
+attention weights. For a given node, the attention coefficients assigned 
+to its neighbors are calculated as follows: 
+αij = (w1xi)T(
+w2xj
+)
+̅̅̅
+d
+√
+Here, xi and xj represent the feature vectors of the nodes, w1 and w2 are 
+learnable weight matrices, and d denotes the dimensionality.
+After each graph attention operation, the model applies activation 
+normalization to the node features to reduce internal covariate shift and 
+stabilize training. The computation is defined as follows: 
+xʹ
+i =
+xi −E[xi]
+̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅̅
+Var(xi) + ∊
+√
+⊙γ + β 
+Here, γ and β are learnable parameters, and ∊ is a small constant added 
+for numerical stability to avoid division by zero.
+In addition, the model includes residual connections to address the 
+over-smoothing problem, which can occur in deep GNNs when node 
+features become indistinguishable. These connections help preserve 
+original node representations during propagation. This design also re­
+flects the physical behavior of thermal exchange between building 
+components, where local characteristics remain partially independent.
+After the two graph attention layers, skip connections are used to 
+fuse embeddings from different depths. A global max-pooling layer then 
+aggregates the node features into a graph-level representation. This 
+representation is passed through two linear layers: the first reduces the 
+dimensionality to 32, and the second produces the final regression 
+Fig. 3. Schematic diagram of Building Component Graphic System (BCGS).
+Table 2 
+Vector information of each node.
+Attributes
+Title
+Abbreviation
+Descriptions
+Range
+Geometry
+Area
+Area
+Size of the area of the component (m2)
+>0
+​
+ShapeIndex
+SI
+It expresses the degree of geometric regularitySI = (Perimeter*Circumference)/ 
+(4*pi*Area)
+>1
+​
+Direction
+Dir
+Exterior wall types are given: east, south, west, north. The rest of the walls are given none
+0,1,2,3,4
+Thermal
+Type
+Type
+Classification to which the component belongs: external walls, internal walls, surface, roofs
+0,1,2,3
+​
+Conductivity
+Con
+The thermal conductivity of the material (W/m-K).
+0.1–2
+​
+Thickness
+Thi
+The thickness of the material layer (m).
+0.1–0.5
+​
+Thermal 
+Absorptance
+TA
+The fraction of incident long wavelength radiation that is absorbed by the material.
+0–1
+​
+Solar Absorptance
+SA
+The fraction of incident solar radiation absorbed by the material.
+0–1
+​
+Visible Absorptance
+VA
+The fraction of incident visible wavelength radiation absorbed by the material.
+0–1
+​
+OutCondition
+Out
+Environment to which the component is exposed: Outdoor, Surface, Ground (soil)
+0,1,2
+Subface
+SubfaceType
+SType
+Types of sub-surfaces owned on this member: none, window only, door only, door & window
+0,1,2,3
+​
+SubfaceArea
+SArea
+Total area of all sub-surfaces of the member (m2)
+>0
+​
+SubfaceConductivity
+SCon
+The weighted thermal conductivity of the sub-surfaces, using the u-value in the case of transparent materials. The 
+U-factor of the glazing system including standard air gap resistances on either side of the glazing system. (W/m2- 
+K)
+0–1
+​
+SubfaceSHGC
+SSHGC
+The weighted solar heat gain coefficients for sub-surfaces. The solar heat gain coefficient of the glazing system.
+0–1
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+5 
+
+================================================================================
+PAGE 6
+================================================================================
+output. Dropout is applied between the two layers to prevent overfitting.
+3.2.2. Baseline models
+To assess the performance of the proposed Enhanced GAT, we con­
+structed three baseline models, each representing a different graph 
+learning paradigm: Base GCN, GIN, and Base GAT (Table 3).
+The number of network layers was set to balance expressive power 
+and training efficiency. A depth of two to three layers was adopted, since 
+shallow networks are effective in mitigating over-smoothing. GCN was 
+assigned three layers to ensure adequate feature extraction, while GIN 
+Fig. 4. a. Enhanced-GAT structure with GNNExplainer. b. All GNN structure.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+6 
+
+================================================================================
+PAGE 7
+================================================================================
+and GAT, which already have stronger expressive capacity through MLP 
+embedding and attention mechanisms, were limited to two layers to 
+control parameters, reduce computational cost, and prevent overfitting.
+The Base GCN consists of a three-layer standard graph convolutional 
+network using GCNConv modules. Each convolutional layer is followed 
+by a ReLU activation and a dropout layer to reduce overfitting. A global 
+average pooling operation aggregates the node features into a graph- 
+level embedding, which is then passed through a final linear layer for 
+regression.
+The GIN model replaces standard convolution layers with GINConv 
+modules, each comprising a two-layer MLP to enhance representational 
+power. To compress the graph and emphasize informative substructures, 
+TopKPooling is applied after the first two layers for learnable node se­
+lection. This architecture has demonstrated strong performance in graph 
+regression tasks [44]. The Base GAT model employs multi-head atten­
+tion, using four attention heads per layer. The outputs from each head 
+are concatenated, followed by dropout and ReLU activation. All four 
+models use identical training configurations (see Supplementary 
+material).
+The predictive performance of the proposed GNNs is further 
+compared with end-to-end data-driven models. Among them, XGBoost is 
+widely used in BEM for energy prediction but only supports 2D array 
+inputs [45]. To accommodate this limitation, two variants are 
+constructed. 
+• XGBoost Simplified includes averaged parameters such as Area and 
+Conductivity for Ground & Roof, Exterior Wall, Interior Wall, and the 
+Window-to-Wall Ratio (WWR).
+• XGBoost Refined further incorporates the Shape Index (SI) and dis­
+aggregates Exterior Wall and WWR by orientation (Table 4).
+3.2.3. Gnnexplainer
+To enhance model interpretability, this study adopts GNNExplainer 
+as a model-agnostic tool for local analysis of graph-level regression re­
+sults [46]. GNNExplainer is independent of the underlying model’s 
+architecture or parameters. It identifies critical associations between 
+input features and predictions by optimizing input perturbations and 
+applying feature masking (Fig. 4). Compared to gradient-based methods, 
+GNNExplainer avoids the problem of gradient saturation [47]. It also 
+overcomes the limitations of feature-only methods, which cannot 
+explain discrete structural changes in graphs.
+In the node feature analysis, GNNExplainer applies both positive and 
+negative perturbations to each feature and measures their average effect 
+on the prediction. It also uses node masks to quantify the contribution of 
+each node to the model’s output. The results from feature perturbation 
+and node masking are combined to generate an overall importance 
+score. 
+Impi,f = f
+(
+xi,f + ∊
+)
+−f
+(
+xi,f −∊
+)
+2∊
+⋅mi⋅xi,f 
+Here, f(⋅) denotes the model prediction function, mi is the importance 
+mask learned for each node during explanation, xi,f represents the 
+feature value, and ∊ is the perturbation scale. Feature sensitivity is 
+evaluated by averaging the output variations under multi-scale pertur­
+bations.
+In edge structure analysis, GNNExplainer performs a virtual deletion 
+for each edge by removing it and recalculating the prediction, thereby 
+estimating its importance. Explanation optimization is achieved by 
+maximizing the mutual information between the prediction and the 
+explanatory substructure. 
+max
+Gs,Xs MI(Y, (Gs, XS) )
+This method quantifies the contribution of each component to the 
+model’s prediction. We first assess how different features influence re­
+sults without considering component types. Then, given the distinct 
+thermal roles of exterior walls, interior walls, roofs, and floors, we 
+analyze their individual feature impacts on energy use.
+Edge importance scores from GNNExplainer reveal the relative 
+strength of thermal interactions between components, helping to iden­
+tify hidden heat paths and critical design elements.
+3.3. Graph centrality metrics
+To better understand how the GNN utilizes building graph structures, 
+we introduce four graph centrality metrics (Table 5). These are 
+compared with the node importance scores obtained from GNNEx­
+plainer to analyze their correlation. Centrality metrics quantify a node’s 
+role based on connectivity, mediation, and information flow. This allows 
+us to examine whether the GNN relies more on structural hubs for en­
+ergy prediction. Such hubs may correspond to physical zones with 
+concentrated thermal bridges or airflow channels, where energy ex­
+change is most intensive. This analysis helps establish a theoretical link 
+between graph structure and energy performance, offering a new 
+foundation for optimizing building systems based on structural 
+importance.
+σst: the total number of shortest paths from node s to node t. σst(v): 
+the number of shortest paths from s to t that pass through node v. d(v,t): 
+Table 3 
+Comparison of different graph neural network structures.
+Model Type
+Convolution 
+Module
+Pooling Method
+Attention 
+Mechanism
+Residual 
+Connection
+Layer 
+Normalization
+Jump 
+Connection
+Predictive Head
+Base GCN
+GCNConv × 3
+Global Mean 
+Pool
+×
+×
+×
+×
+Linear (16 → 1)
+GIN
+GINConv × 3
+Global Mean 
+Pool
+×
+×
+×
+×
+Linear (16 → 1)
+Base GAT
+GATConv × 2
+Global Mean 
+Pool
+4-head
+×
+×
+×
+Linear (128 → 1)
+Enhanced 
+GAT
+GATConv £ 2
+Global Max 
+Pool
+4-head
+√
+√
+√
+MLP (128 → 32 → 1)
+Table 4 
+Two sets of input settings for XGBoost.
+XGBoost Simplified Inputs
+XGBoost Refined Inputs
+Ground&Roof:Area/Con
+Ground: Area/SI/Con
+Roof:Area/SI/Con
+Exterior wall:Area/Con
+Exterior wall(east):Area/SI/Con
+Exterior wall(south):Area/SI/Con
+Exterior wall(west):Area/SI/Con
+Exterior wall(north):Area/SI/Con
+Interior wall:Area/Con
+Interior wall:Area/SI/Con
+Window:WWR/SCon
+Window(east):WWR/SCon
+Window(south):WWR/SCon
+Window((west):WWR/SCon
+Window(north):WWR/SCon
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+7 
+
+================================================================================
+PAGE 8
+================================================================================
+the shortest path distance from node v to node t. A: the adjacency matrix 
+of the graph.
+3.4. Case study application
+This section verifies the model’s potential to evolve from a predictive 
+tool into a decision-support system. A multi-objective optimization is 
+conducted on a typical residential unit, aimed at real engineering 
+problems rather than data generation. The results demonstrate the 
+flexibility of the BCGS structure in component-level adjustments and 
+show how model interpretation can guide design strategies, forming a 
+closed loop from model understanding to design empowerment.
+The floor plan is shown in Fig. 5, with a uniform ceiling height of 3 
+m. Exterior walls are fixed and cannot be altered, while interior wall­
+s—except those enclosing the bathroom—are adjustable within a pre­
+defined range. If an interior wall overlaps with an exterior wall, it is 
+treated as absent. Window size is controlled by the window-to-wall 
+ratio; a ratio of zero indicates that no window is present on that wall. 
+Interior doors must be anchored to their corresponding interior walls, 
+and their presence is encoded as a binary value (0 or 1) along with 
+position information. All parametric modeling was implemented using 
+the Grasshopper platform in Rhino 8.
+Energy use and daylighting are widely recognized as key indicators 
+for evaluating high-performance spatial efficiency [10]. This study se­
+lects three optimization objectives: EUI, Cost, and UDI. EUI is predicted 
+using the pre-trained Enhanced GAT model. UDI represents the 
+percentage of annual work hours during which indoor illuminance at a 
+given point remains within a visually comfortable range. It is one of the 
+most widely adopted dynamic metrics for assessing daylight perfor­
+mance in buildings. The UDI is calculated as follows: 
+UDIx∼y = Tx≤E(t)≤y
+Ttotal
+× 100% 
+Here, UDIx∼y represents the percentage of time during which indoor 
+illuminance falls within the useful range of x to y lux. E(t) denotes the 
+simulated indoor illuminance at time t, and Ttotal is the total duration of 
+work hours throughout the year used in the simulation.
+The total material cost is simplified to include both transparent and 
+opaque components. Exterior walls, roofs, and floors are composed of 
+200 mm thick autoclaved aerated concrete (AAC) blocks with a thermal 
+conductivity of 0.1 W/m⋅K, combined with a variable-thickness insu­
+lation layer rated at 0.035 W/m⋅K. Interior walls are made solely of 200 
+mm AAC blocks. The cost of opaque elements is calculated as follows: 
+Csum =
+1
+Tsum−Tc
+Ci
++ Tc
+Cc 
+COST =
+∑
+A(Pc × Tc + Pi × Ti)
+Here, A, Csum, and Tsum represent the Area, Thermal Conductivity, and 
+Thickness, respectively. Ci is the thickness of the insulation layer, and Cc 
+is the fixed thickness of the concrete block (200 mm). Pc and Pi are the 
+unit costs of the concrete block and insulation material, set at 300 CNY/ 
+m3 and 450 CNY/m3.
+The cost of glazing is estimated based on its U-value and SHGC, and is 
+calculated using the following formula: 
+COST =
+∑
+(((Ubase −U) × μ + (Sbase −S) × ε) + B) × A 
+Here, A is the glazing area, and U and S are the U-value and SHGC of the 
+glazing material, respectively. Ubase is the baseline U-value for standard 
+glazing (2.8 W/m2⋅K), and μ is the cost coefficient based on U-value (500 
+CNY). Sbase is the baseline SHGC (0.6), and ε is the cost coefficient based 
+on SHGC (300 CNY). B is the base cost covering installation and framing 
+(250 CNY).
+Wallacei, built on the NSGA-II algorithm, is well-suited for nonlinear, 
+multi-objective architectural tasks by emphasizing solution space 
+Table 5 
+Characteristics of centrality indicators for the four graph structures.
+Indicator
+Definition
+Calculation
+Degree 
+Centrality
+The number of other nodes directly 
+connected to this node.
+CD(v) = deg(v)
+Betweenness 
+Centrality
+The frequency with which a node is 
+located on the shortest path measures 
+the extent to which it ‘mediates’ the 
+transfer of information.
+CB(v) =
+∑
+s∕=v∕=t
+σst(v)
+σst
+Closeness 
+Centrality
+The reciprocal of the shortest path 
+distance from the node to all other 
+nodes measures its overall proximity to 
+the centre.
+CC(v) =
+1
+∑
+td(v, t)
+Eigenvector 
+Centrality
+Node influence depends not only on the 
+number of connections but also on the 
+influence of its neighbours
+CE(v)∝
+∑
+u∈N(v)CE(u)
+Fig. 5. Typical residential floor plan.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+8 
+
+================================================================================
+PAGE 9
+================================================================================
+exploration and trade-off analysis. The optimization settings are as fol­
+lows: a population size of 50, 50 generations, and a crossover probability 
+of 0.9.
+4. Result
+4.1. Validation of homogenization-related errors
+Fig. 6 shows that the three groups of 1,000 samples display clear 
+differences in energy use during the initial data collection phase. All 
+parameters are kept consistent across groups, with the only variations 
+being the presence of interior walls and height differences. Exterior wall 
+properties and sub-surface attributes remain identical.
+Results show that the group without interior walls or height differ­
+ences (None) has the lowest overall EUI, while the group with both 
+interior walls and height variation (Interior Wall & Height) consistently 
+records the highest. The same trend is observed in both heating and 
+cooling loads. This result comes from extra thermal paths and uneven 
+temperatures caused by internal partitions and height differences. These 
+factors make HVAC systems work harder. In contrast, uniform spaces 
+allow easier and more efficient thermal control.
+Using the Interior Wall & Height group as the baseline, the Interior 
+Wall group underestimates energy use by an average of 3.1 %. Ignoring 
+both height variation and interior partitions (None) leads to a 7.4 % 
+underestimation. These results suggest that neglecting internal details 
+can substantially underestimate building energy consumption, particu­
+larly in traditional models that rely on geometric simplification or 
+averaged parameters.
+4.2. Model performance comparison
+We trained four models—Base GCN, GIN, Base GAT, and Enhanced 
+GAT—for 1,000 epochs using identical hyperparameters. Accuracy was 
+evaluated with Root Mean Squared Error (RMSE), Mean Absolute Error 
+(MAE), and R2. Training time was recorded as the cost indicator. The 
+comparison used only the Interior Wall & Height group (1,000 graph 
+samples). Results for the other groups and their combinations are pro­
+vided in the supplementary materials.
+As shown in Table 6, the XGBoost Refined model, which includes 
+more input parameters, shows slightly higher accuracy than XGBoost 
+Simplified. Although the Enhanced GAT model requires longer training 
+due to its complexity, this one-time cost yields about a 13 % improve­
+ment in prediction accuracy. This improvement may result from the fact 
+that XGBoost lacks detailed component-level features and cannot 
+represent connectivity through two-dimensional arrays, which leads to a 
+significant loss of input information.
+4.3. GCNExplainer’s interpretation
+4.3.1. Global feature importance
+By applying GCNExplainer to perturb and mask all node features, we 
+measured the contribution of each component attribute to energy pre­
+diction. The absolute values of these contributions are shown in Fig. 7. 
+Component Area has the strongest effect, with an average contribution 
+of 26 %, a maximum of 34 %, and a minimum above 10 %. Sub-surface 
+Area also plays a role, typically ranging from 5 % to 9 %. Thermal 
+properties, however, show little influence on the model output. In 
+contrast, the SI, a geometric feature, contributes around 5 %. Overall, 
+geometry features like area and SI have a strong impact on thermal 
+exchange and energy use.
+4.3.2. Feature importance by component type
+All components were classified into 14 types. These categories are 
+not mutually exclusive. For example, exterior walls can be grouped by 
+orientation (east, south, west, north) or by sub-surface configuration (no 
+openings, door only, window only, or both). Fig. 8 presents the feature 
+importance statistics across these categories.
+The results show that Area contributes up to 55 % for roofs and 
+floors, followed by exterior walls, but its impact on interior walls is 
+relatively small. This provides component-level detail not captured in 
+the global analysis of Section 4.3.1. In contrast, the SI is more important 
+for interior walls than for roofs, floors, or exterior walls.
+Subsurface area reveals additional effects. Windows contribute much 
+more than doors. Walls facing east and south are more sensitive to 
+window area. This agrees with real-world thermal behavior, since 
+windows have lower thermal resistance than doors. Their size variation 
+has a stronger impact on indoor temperature, especially on east and 
+south façades exposed to higher solar radiation.
+Subsurface Conductivity contributes nearly 8 % in exterior walls 
+with windows. This indicates that the model captures the thermal 
+relevance of transparent envelope elements. However, other features, as 
+noted in Section 4.3.1, show only limited influence (Fig. A2).
+In summary, the global analysis in Section 4.3.1 masks important 
+differences between component types. To understand model behavior 
+accurately and to support effective design optimization, feature impor­
+tance should be examined in relation to specific component categories 
+and their physical roles.
+4.3.3. Importance of component connectivity
+Edges are critical because they enable information to propagate 
+across the graph. In this study, edges are encoded as binary values, but 
+GCNExplainer can still assess their impact by applying a masking 
+approach. This reveals hidden thermal pathways and key design junc­
+tions. The results are shown in Fig. 9. Note that not all components can 
+be connected; for example, roofs and floors are never directly linked.
+Connections involving exterior walls have the strongest impact on 
+the model’s predictions. Among them, connections between exterior 
+walls are especially important because they determine envelope conti­
+nuity and influence thermal bridging. When sub-surfaces such as win­
+dows or doors are present, these junctions often become thermal weak 
+points. For instance, the edge between an east-facing wall and a 
+windowed wall shows high importance, suggesting that window 
+Fig. 6. Difference in energy consumption data for 1000 samples in three groups.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+9 
+
+================================================================================
+PAGE 10
+================================================================================
+placement intensifies heat transfer along that path. Edges connected to 
+roofs and floors show moderate importance. Both component types 
+exhibit consistent behavior, suggesting that their thermal performance 
+is stable and predictable within the building system.
+Connections involving interior walls show low importance, espe­
+cially those between plain interior walls and other components. Their 
+impact on prediction is minimal, likely because of the stable thermal 
+environment and limited heat exchange. These results confirm that 
+connection types contribute unevenly to energy prediction. Edges in the 
+graph not only capture geometric relationships but also encode mean­
+ingful thermal exchange pathways.
+4.3.4. Centrality analysis
+Fig. 10 shows the correlation between graph centrality metrics and 
+component contribution scores. The results highlight differences in the 
+structural roles of component types within the graph network.
+Roof and floor components show strong positive correlations across 
+all centrality indicators, with coefficients around 0.4. These elements 
+Table 6 
+Comparison of accuracy and cost of four models.
+Model
+RMSE(kWh/m2)
+MAE(kWh/m2)
+R2
+Time
+train
+test
+train
+test
+train
+test
+GNN
+Base GCN
+41.648
+41.570
+32.685
+33.957
+0.587
+0.613
+0:01:16
+GIN
+37.180
+40.047
+29.007
+32.541
+0.682
+0.586
+0:01:33
+Base GAT
+19.693
+24.746
+15.405
+19.424
+0.911
+0.842
+0:01:45
+Enhanced GAT
+15.889
+21.479
+12.488
+16.550
+0.942
+0.881
+0:02:11
+XGBoost
+XGBoost Simplified
+26.312
+33.883
+20.848
+27.188
+0.833
+0.756
+0:00:01
+XGBoost Refined
+21.170
+28.762
+16.658
+23.224
+0.898
+0.778
+0:00:01
+Fig. 7. Comparison of features’ absolute importance of all components.
+Fig. 8. Comparison of characteristic importance of different components.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+10 
+
+================================================================================
+PAGE 11
+================================================================================
+function as primary structural hubs in the model. Because roofs and 
+floors are the largest and most exposed thermal interfaces, components 
+that are more connected or central in the network exert greater influence 
+on energy consumption. The model’s focus on these nodes suggests that 
+the GNN has learned to recognize a form of “thermal centrality” from 
+topological position rather than relying only on geometry or material 
+properties.
+Interior walls show a moderate positive correlation with centrality, 
+at about 0.2. This indicates that the model recognizes their role in in­
+ternal heat exchange, although their thermal impact remains spatially 
+limited.
+Exterior walls show a weak negative correlation with centrality, at 
+about –0.2. This may result from their peripheral position in the graph, 
+where they connect mainly to roofs, floors, or a few interior walls. 
+Highly central exterior wall nodes are often corner or boundary ele­
+ments. These have many links but limited control over heat flow, 
+creating a mismatch between structural importance and thermal 
+influence.
+Overall, the correlation patterns suggest that different component 
+types play distinct roles in the graph and are used differently by the 
+model. The results imply that early-stage design should prioritize insu­
+lation for highly central roofs and floors, reconsider the placement of 
+low-centrality exterior walls, and plan interior wall layouts with atten­
+tion to their thermal network position..
+4.4. Optimization results from case study
+Unlike XGBoost, which relies on 2D arrays, BCGS allows flexible 
+adjustments at the component level. After 2,500 generations of evolu­
+tionary search, the model identified 198 Pareto-optimal solutions. These 
+were clustered into three groups using the K-means algorithm (Fig. 11). 
+Representative spatial solutions were analyzed based on the centroid of 
+each cluster. 
+• Most solutions (Cluster1, Cluster2, Cluster3) optimized performance 
+by enhancing south-facing window glass and increasing insulation 
+thickness on the west-facing roof.
+• Cluster1 reduced the number of interior walls to improve spatial 
+openness, achieving a trade-off between UDI and construction cost.
+Fig. 9. Comparison of the importance of different component connections.
+Fig. 10. Correlation analysis of model importance and graph centrality for different building blocks.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+11 
+
+================================================================================
+PAGE 12
+================================================================================
+• Cluster2 retained a more complete internal wall layout and opti­
+mized the size and thermal conductivity of east-facing windows to 
+enhance daylighting while maintaining cost control.
+Component-level optimization provides spatial precision and control 
+in performance design. Significant improvements can be achieved 
+without altering the overall geometric layout. BCGS thus offers a flex­
+ible, interpretable, and efficient framework for component-scale energy 
+optimization. It forms a complete pipeline from graph-based modeling 
+to energy prediction and solution refinement. These results demonstrate 
+its applicability and value in performance-driven architectural design.
+5. Discussion
+5.1. Findings on BCGS
+The BCGS data structure improves component-level modeling 
+accuracy by 13 % compared with end-to-end models. This 
+improvement comes from its stronger geometric representation and 
+greater physical consistency. Compared with Base GCN, GAT introduces 
+self-attention mechanisms that capture complex radiative interactions 
+among components. Experiments show that GAT raises test set perfor­
+mance from R2 = 0.613 to R2 = 0.842, a 40 % gain. The Enhanced GAT 
+Fig. 11. Case optimization results a. 3 Pareto typical solutions b. Specific transformation strategies.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+12 
+
+================================================================================
+PAGE 13
+================================================================================
+further improves R2 to 0.881, adding another 4.6 %. These results sup­
+port embedding physical priors into network design. However, 
+increasing graph complexity also raises computational cost, requiring a 
+balance between accuracy and efficiency.
+Geometric features, especially component area, dominate the 
+impact on energy consumption. This suggests that traditional retro­
+fitting strategies focused on material and thickness may need to be 
+reevaluated. GCNExplainer analysis shows that Area is the most influ­
+ential factor across all component types, contributing more than 50 % in 
+roofs and floors. This supports the common use of per-unit-area energy 
+metrics in energy policy research [48,49], but also highlights the over­
+looked role of façade area. Such findings may guide the development of 
+new composite indicators, such as an “effective room volume” that in­
+tegrates envelope area and internal volume. Window areas on south and 
+west façades are particularly sensitive due to solar gain. The importance 
+of window area (20 %) and window thermal conductivity (8 %) exceeds 
+that of opaque material conductivity and thickness. This contradicts 
+conventional strategies that prioritize insulation mass [4,50]. Overall, 
+the results suggest that optimizing space layout and maximizing geo­
+metric regularity at the design stage may deliver larger efficiency gains 
+than material use alone.
+The explicit modeling of component connections (edges) in 
+BCGS reveals key heat transfer pathways. Centrality analysis shows 
+that highly connected roofs and floors act as heat exchange hubs and 
+require targeted design attention. In contrast, exterior walls in corner 
+zones may experience reduced thermal load due to shading. These re­
+sults highlight that energy-efficient design strategies must account for 
+both physical attributes and topological positions.
+5.2. Practical potential of BCGS
+The proposed Enhanced GAT improves accuracy by 13 % compared 
+to the end-to-end ensemble model XGBoost. The practical potential of 
+this framework is not to replace physically transparent white-box 
+simulation tools but to address the black-box nature of the design pro­
+cess. The combination of BCGS and Enhanced GAT model offers repla­
+ceability through graph structures, which not only accelerates energy 
+prediction but also provides greater flexibility for energy-efficient 
+design and retrofitting. In terms of efficiency, the Enhanced GAT 
+model requires higher one-time training cost than XGBoost, but pre­
+diction speed is similar and accuracy improves by 13 %. Compared with 
+simulation engines such as EnergyPlus, this approach achieves predic­
+tion efficiency several thousand times higher. These results demonstrate 
+the potential of the BCGS to handle more complex and large-scale 
+buildings, where efficiency becomes increasingly critical. 
+• Wall and window attributes can be independently set for flexible 
+component replacement.
+• Decision-makers can identify critical heat transfer paths and priori­
+tize retrofitting of high-risk components such as south-facing roofs.
+• Spatial connectivity and thermo-optical efficiency can be optimized 
+in the design phase to enhance overall energy performance.
+Findings show that neglecting internal partitions leads to more than 
+7 % prediction error. Ignoring external height variations results in about 
+3.1 % error. These discrepancies increase as model complexity grows. By 
+capturing detailed spatial configurations, BCGS closes this gap in con­
+ventional modeling and provides a more realistic basis for simulating 
+heat transfer and airflow. This approach with replaceable components is 
+especially suitable for both retrofitting existing buildings and early-stage 
+design. For example, BCGS can recommend enhanced spatial connec­
+tivity. It can also guide the allocation of high-performance envelope 
+materials to thermally sensitive zones such as south walls and roofs. In 
+addition, it can match glazing performance to window size, helping to 
+avoid energy inefficiency.
+The BCGS framework serves as a data- and performance-driven aid 
+for energy-efficient design, complementing rather than replacing the 
+designer’s decision-making. Its efficacy relies on synergy with real- 
+world design conditions, spatial reasoning, and parametric processes. 
+As such, BCGS should be considered a targeted design support tool that 
+connects performance feedback with design modifications at the 
+component scale.
+5.3. Limitations
+At the data level, This study uses a single-story residential building 
+with clear physical rules as a case study. The goal is to validate the BCGS 
+graph structure, the learning performance of the GAT model, and the 
+physical consistency of its interpretation. Reliability at this basic level is 
+essential for future applications to more complex scenarios. The current 
+work does not cover high-rise buildings, irregular forms, or group in­
+teractions, which limits model generalization. High-quality 3D geome­
+try data for buildings remain scarce. However, the flexible graph 
+structure of BCGS supports multi-scale modeling from single dwellings 
+to urban clusters. This helps overcome many limitations of data-driven 
+BEM models in scene transfer and input formatting.
+At the algorithm level, the current model does not include dynamic 
+environmental variables such as weather or occupant behavior, nor 
+system operating states. Yet these factors strongly influence energy use 
+[14]. Incorporating multi-modal data fusion could improve the model’s 
+adaptability across different contexts.
+6. Conclusion
+In response to the growing global challenges of building energy 
+consumption and carbon neutrality, this study introduces and validates 
+a novel framework. By representing components as graph nodes and 
+their physical connections as edges, BCGS accurately captures three- 
+dimensional spatial details and underlying physical relationships, 
+addressing the limitations of classic BEM in spatial representation.
+The key findings clearly demonstrate the advantages and new in­
+sights enabled by BCGS. First, we quantify that ignoring spatial details 
+such as interior partitions and height variation can lead to energy pre­
+diction errors as high as 7.4 %, underscoring the necessity of fine- 
+grained modeling. Second, using an Enhanced GAT specifically opti­
+mized for BCGS data, we achieved a high prediction accuracy of R2 =
+0.881, significantly outperforming conventional end-to-end data-driven 
+approaches by 13 %.
+Moreover, through GCNExplainer, the study reveals that geometric 
+features and component connectivity have a greater and more direct 
+influence on energy outcomes than traditionally emphasized thermal 
+properties. The analysis also highlights differentiated effects across 
+component types, with centrality metrics indicating that roofs and floors 
+play distinct roles compared to walls. Beyond prediction, BCGS coupled 
+with multi-objective optimization demonstrates strong potential in 
+supporting energy-efficient design decisions and retrofit strategies. The 
+framework forms a closed-loop workflow, from knowledge embedding 
+and accurate prediction to interpretable analysis and design guidance.
+In summary, the BCGS combined with graph neural networks pro­
+vides a new paradigm for building energy prediction and optimization 
+that is more accurate, interpretable, and practical. Its near-instant pre­
+dictive capacity can greatly shorten performance analysis cycles, 
+allowing designers to explore diverse schemes at low cost in the early 
+stages and to balance energy use, cost, and comfort more effectively. On 
+this basis, the BCGS framework also lays the foundation for AI-assisted 
+generative design. In the future, it may enable the direct generation of 
+building schemes that combine spatial rationality with optimal perfor­
+mance under physical and topological constraints. This would move 
+artificial intelligence from a role of performance evaluator to that of 
+design collaborator, offering new momentum for low-carbon design and 
+sustainable development in the building industry.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+13 
+
+================================================================================
+PAGE 14
+================================================================================
+CRediT authorship contribution statement
+Yanting Shen: Writing – original draft, Methodology, Formal anal­
+ysis, Conceptualization. Junlin Zhu: Software, Data curation. Qibo 
+Zhang: Visualization. Chenyu Huang: Supervision. Jiahong Ye: 
+Investigation. Jiawei Yao: Supervision, Project administration, Funding 
+acquisition.
+Declaration of competing interest
+The authors declare that they have no known competing financial 
+interests or personal relationships that could have appeared to influence 
+the work reported in this paper.
+Acknowledgment
+This research was financially supported by the National Natural 
+Science Foundation of China under Grant No. 52278041& 52338004.
+Appendix
+Fig. A1. First 30 of 1000 dwelling units (with height group).
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+14 
+
+================================================================================
+PAGE 15
+================================================================================
+Fig. A2. Importance of other attributes.
+Appendix A. Supplementary material
+Supplementary data to this article can be found online at https://doi.org/10.1016/j.enbuild.2025.116584.
+Data availability
+The data are available from the corresponding author upon reason­
+able request.
+References
+[1] IEA Tracking Report - Buildings | GlobalABC [Internet]. [cited 2025 Jun 11]. 
+Available from: https://globalabc.org/index.php/resources/publications/iea-tra 
+cking-report-buildings.
+[2] I. Citaristi, International energy agency—iea. The Europa directory of international 
+organizations 2022, Routledge, 2022, pp. 701–702.
+[3] Renwei C. Building Energy Efficiency Retrofits: Policies and Market 
+Transformation [Internet]. [cited 2025 Jun 11]. Available from: https://www.efch 
+ina.org/Reports-en/report-lccp-20211022-en.
+[4] A. Baniassadi, J. Heusinger, P.I. Gonzalez, et al., Co-benefits of energy efficiency in 
+residential buildings, Energy 238 (2022) 121768.
+[5] Z. Zhang, A. Chong, Y. Pan, et al., Whole building energy model for HVAC optimal 
+control: a practical framework based on deep reinforcement learning, Energ. Build. 
+199 (2019) 472–490.
+[6] S.T. Abey, K.B. Anand, Embodied energy comparison of prefabricated and 
+conventional building construction, J. Inst. Eng. (India): Series A. 100 (4) (2019) 
+777–790.
+[7] M. R¨ock, M.R.M. Saade, M. Balouktsi, et al., Embodied GHG emissions of buildings 
+– the hidden challenge for effective climate change mitigation, Appl. Energy 258 
+(2020) 114107.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+15 
+
+================================================================================
+PAGE 16
+================================================================================
+[8] C. Balocco, G. Pierucci, M. De Lucia, An experimental method for building energy 
+need evaluation at real operative conditions. A case study validation, Energ. Build. 
+266 (2022) 112114.
+[9] K. Feng, C. Chokwitthaya, W. Lu, Exploring occupant behaviors and interactions in 
+buildings with energy-efficient renovations: a hybrid virtual-physical experimental 
+approach, Build. Environ. 265 (2024) 111991.
+[10] R.E. Weber, C. Mueller, C. Reinhart, A hypergraph model shows the carbon 
+reduction potential of effective space use in housing, Nat. Commun. 15 (1) (2024) 
+8327.
+[11] Winkelmann F, Birdsall B, Buhl W, et al. DOE-2 supplement: version 2.1 E. 
+Lawrence Berkeley National Lab.(LBNL), Berkeley, CA (United States); Hirsch …; 
+1993.
+[12] D.B. Crawley, L.K. Lawrie, F.C. Winkelmann, et al., EnergyPlus: creating a new- 
+generation building energy simulation program, Energ. Buildings 33 (4) (2001) 
+319–331.
+[13] R.L. Shrivastava, V. Kumar, S.P. Untawale, Modeling and simulation of solar water 
+heater: a TRNSYS perspective, Renew. Sustain. Energy Rev. 67 (2017) 126–143.
+[14] A. Bampoulas, F. Pallonetto, E. Mangina, et al., A Bayesian deep-learning 
+framework for assessing the energy flexibility of residential buildings with 
+multicomponent energy systems, Appl. Energy 348 (2023) 121576.
+[15] C. Lu, S. Li, Z. Lu, Building energy prediction using artificial neural networks: a 
+literature survey, Energ. Buildings 262 (2022) 111718.
+[16] B. Kuang, C. Schelly, G. Ou, et al., Data-driven analysis of influential factors on 
+residential energy end-use in the US, J. Build. Eng. 75 (2023) 106947.
+[17] Q. Jiang, C. Huang, Z. Wu, et al., Predicting building energy consumption in urban 
+neighborhoods using machine learning algorithms, Front. Urban Rural Plan. 2 (1) 
+(2024) 6.
+[18] Y. Jia, J. Wang, M. Reza Hosseini, et al., Temporal graph attention network for 
+building thermal load prediction, Energ. Buildings 321 (2024) 113507.
+[19] C. Fan, J. Wang, W. Gang, et al., Assessment of deep recurrent neural network- 
+based strategies for short-term building energy predictions, Appl. Energy 236 
+(2019) 700–710.
+[20] Y. Hu, X. Cheng, S. Wang, et al., Times series forecasting for urban building energy 
+consumption based on graph convolutional network, Appl. Energy 307 (2022) 
+118231.
+[21] W. Liao, B. Bak-Jensen, J.R. Pillai, et al., Short-term power prediction for 
+renewable energy using hybrid graph convolutional network and long short-term 
+memory approach, Electr. Pow. Syst. Res. 211 (2022) 108614.
+[22] M. Raissi, P. Perdikaris, G.E. Karniadakis, Physics-informed neural networks: a 
+deep learning framework for solving forward and inverse problems involving 
+nonlinear partial differential equations, J. Comput. Phys. 378 (2019) 686–707.
+[23] Z. Jiang, X. Wang, H. Li, et al., Physics-informed machine learning for building 
+performance simulation-a review of a nascent field, Adv. Appl. Energy 18 (2025) 
+100223.
+[24] X. Chen, M.M. Singh, P. Geyer, Utilizing domain knowledge: robust machine 
+learning for building energy prediction with small, Available from: Inconsistent 
+Datasets [Internet]. (2023) https://arxiv.org/abs/2302.10784.
+[25] Z. Jiang, B. Dong, Modularized neural network incorporating physical priors for 
+future building energy modeling, Patterns [Internet]. (2024) [cited 2025 Jun 9];5 
+(8.
+[26] J. Ko, D. Lee, Graph neural networks for classification and error detection in 2D 
+architectural detail drawings, Autom. Constr. 170 (2025) 105936.
+[27] J. Liu, Z. Qiu, L. Wang, et al., Intelligent floor plan design of modular high-rise 
+residential building based on graph-constrained generative adversarial networks, 
+Autom. Constr. 159 (2024) 105264.
+[28] L. Wang, J. Liu, Y. Zeng, et al., Automated building layout generation using deep 
+learning and graph algorithms, Autom. Constr. 154 (2023) 105036.
+[29] H. Jo, J.-K. Lee, Y.-C. Lee, et al., Generative artificial intelligence and building 
+design: early photorealistic render visualization of façades using local identity- 
+trained models, J. Comput. Des. Eng. 11 (2) (2024) 85–105.
+[30] J.T. Szcze´sniak, Y.Q. Ang, S. Letellier-Duchesne, et al., A method for using street 
+view imagery to auto-extract window-to-wall ratios and its relevance for urban- 
+level daylighting and energy simulations, Build. Environ. 207 (2022) 108108.
+[31] X. Zhuang, Y. Ju, A. Yang, et al., Synthesis and generation for 3D architecture 
+volume with generative modeling, Int. J. Archit. Comput. 21 (2) (2023) 297–314.
+[32] Zhong X, Koh I, Fricker ProfDrP. Building-GNN: Exploring a co-design framework 
+for generating controllable 3D building prototypes by graph and recurrent neural 
+networks. In: Dokonal W, Hirschberg U, Wurzer G, editors. Digital design 
+reconsidered [Internet]. Belgium: eCAADe; 2023. p. 431–440. Available from: 
+https://ecaade2023.tugraz.at/organizers.html.
+[33] Zhuang X, Huang Z, Zeng W, et al. Encoding urban ecologies: Automated building 
+archetype generation through self-supervised learning for energy modeling 
+[Internet]. 2024. Available from: https://arxiv.org/abs/2404.07435.
+[34] Xiang H, Li X, Cheng K, et al. Gaussianroom: Improving 3d gaussian splatting with 
+sdf guidance and monocular cues for indoor scene reconstruction. arXiv preprint 
+arXiv:240519671. 2024;.
+[35] X. Zhuang, P. Zhu, A. Yang, et al., Machine learning for generative architectural 
+design: advancements, opportunities, and challenges, Autom. Constr. 174 (2025) 
+106129.
+[36] N. Nauata, K.-H. Chang, C.-Y. Cheng, et al., House-GAN: Relational generative 
+adversarial networks for graph-constrained house layout generation, in: A. Vedaldi, 
+H. Bischof, T. Brox (Eds.), Computer Vision – ECCV 2020, Springer International 
+Publishing, Cham, 2020, pp. 162–177.
+[37] M.K. Bracht, A.P. Melo, R. Lamberts, A metamodel for building information 
+modeling-building energy modeling integration in early design stage, Autom. 
+Constr. 121 (2021) 103422.
+[38] N. Gunantara, A review of multi-objective optimization: Methods and its 
+applications, Cogent Eng. 5 (1) (2018) 1502242.
+[39] R. Li, L. Luo, X. Li, et al., Multi-objective optimization for generative morphological 
+design using energy and comfort models with a practical design of new rural 
+community in China, Energ. Build. 313 (2024) 114282.
+[40] O. Veisi, A. Shakibamanesh, M. Rahbar, Using intelligent multi-objective 
+optimization and artificial neural networking to achieve maximum solar radiation 
+with minimum volume in the archetype urban block, Sustain. Cities Soc. 86 (2022) 
+104101.
+[41] PlanFinder [Internet]. [cited 2025 Jun 11]. Available from: https://www.planfi 
+nder.xyz/.
+[42] R.E. Weber, C. Mueller, C. Reinhart, Automated floorplan generation in 
+architectural design: a review of methods and applications, Autom. Constr. 140 
+(2022) 104385.
+[43] A.H. Zeshan, S. Dickinson, Meta-morphing architectural domains: the role of 
+humans and AI in post-human architecture, in: G. Di Marco, D. Lombardi, 
+M. Tedjosaputro (Eds.), Creativity in the Age of Digital Reproduction, Springer 
+Nature Singapore, Singapore, 2024, pp. 253–261.
+[44] K. Xu, W. Hu, J. Leskovec, et al., How powerful are graph neural networks?, 
+Available from: [Internet] (2019) https://arxiv.org/abs/1810.00826.
+[45] Q. Jiang, C. Huang, Z. Wu, et al., Predicting building energy consumption in urban 
+neighborhoods using machine learning algorithms, Front. Urban Rural Plan. 
+(2024) 2731–6661.
+[46] Ying Z, Bourgeois D, You J, et al. GNNExplainer: Generating explanations for graph 
+neural networks. In: Wallach H, Larochelle H, Beygelzimer A, et al., editors. 
+Advances in neural information processing systems [Internet]. Curran Associates, 
+Inc.; 2019. Available from: https://proceedings.neurips.cc/paper_files/paper/201 
+9/file/d80b7040b773199015de6d3b4293c8ff-Paper.pdf.
+[47] S. Bach, A. Binder, G. Montavon, et al., On pixel-wise explanations for non-linear 
+classifier decisions by layer-wise relevance propagation, PLoS One 10 (7) (2015) 
+e0130140.
+[48] J. Li, B. Shui, A comprehensive analysis of building energy efficiency policies in 
+China: status quo and development perspective, J. Clean. Prod. 90 (2015) 
+326–344.
+[49] F.J. Zarco-Soto, I.M. Zarco-Soto, S.S.S. Ali, et al., Energy consumption in buildings: 
+a compilation of current studies, Energy Rep. 13 (2025) 1293–1307.
+[50] R. O’Hegarty, G. Amedeo, O. Kinnane, The impact of compromised insulation on 
+building energy performance, Energ. Buildings 316 (2024) 114337.
+Y. Shen et al.                                                                                                                                                                                                                                    
+Energy & Buildings 349 (2025) 116584 
+16 
