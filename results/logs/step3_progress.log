@@ -1,51 +1,51 @@
-11:01:49 [S3] START study=all smoke=False device=cuda
-11:01:50       data ready: 2250 rows, 249 combos, 9 scenarios
-11:03:38       multiseed seed 0: PI-HGAT R2=0.9673 (102s)
-11:05:17       multiseed seed 1: PI-HGAT R2=0.9489 (91s)
-11:08:30       multiseed seed 2: PI-HGAT R2=0.9802 (186s)
-11:11:21       multiseed seed 3: PI-HGAT R2=0.9781 (164s)
-11:14:57       multiseed seed 4: PI-HGAT R2=0.9817 (206s)
-11:18:19       multiseed seed 5: PI-HGAT R2=0.9784 (193s)
-11:21:34       multiseed seed 6: PI-HGAT R2=0.9801 (189s)
-11:23:29       multiseed seed 7: PI-HGAT R2=0.9758 (109s)
-11:25:23       multiseed seed 8: PI-HGAT R2=0.9761 (109s)
-11:28:53       multiseed seed 9: PI-HGAT R2=0.9813 (203s)
-11:28:53 [S3] multiseed done (10 seeds x 4 models)
-11:30:27 [S3] combosplit done: PI-HGAT R2=0.9842 on unseen combos
-11:34:09       LOSO fold 1_Baseline (dT=0.00): PI-HGAT MAE=4.01
-11:36:49       LOSO fold 2 (dT=1.88): PI-HGAT MAE=0.72
-11:40:13       LOSO fold 3 (dT=2.67): PI-HGAT MAE=0.70
-11:43:28       LOSO fold 4 (dT=2.18): PI-HGAT MAE=0.68
-11:44:48       LOSO fold 5 (dT=4.47): PI-HGAT MAE=2.05
-11:47:39       LOSO fold 6 (dT=1.27): PI-HGAT MAE=0.64
-11:50:00       LOSO fold 7 (dT=1.88): PI-HGAT MAE=0.69
-11:52:17       LOSO fold 8 (dT=1.61): PI-HGAT MAE=0.72
-11:54:55       LOSO fold 9 (dT=3.14): PI-HGAT MAE=0.77
-11:54:55 [S3] loso done (9 folds x 4 models)
-11:55:45       learncurve n=25/scenario seed 42: PI-HGAT R2=0.4277
-11:56:31       learncurve n=25/scenario seed 43: PI-HGAT R2=0.5171
-11:56:45       learncurve n=25/scenario seed 44: PI-HGAT R2=-0.0826
-11:58:01       learncurve n=50/scenario seed 42: PI-HGAT R2=0.8733
-11:59:10       learncurve n=50/scenario seed 43: PI-HGAT R2=0.8404
-11:59:24       learncurve n=50/scenario seed 44: PI-HGAT R2=-0.1676
-12:00:59       learncurve n=100/scenario seed 42: PI-HGAT R2=0.9576
-12:02:13       learncurve n=100/scenario seed 43: PI-HGAT R2=0.9473
-12:03:50       learncurve n=100/scenario seed 44: PI-HGAT R2=0.9665
-12:06:03       learncurve n=150/scenario seed 42: PI-HGAT R2=0.9716
-12:08:17       learncurve n=150/scenario seed 43: PI-HGAT R2=0.9588
-12:10:38       learncurve n=150/scenario seed 44: PI-HGAT R2=0.9698
-12:13:07       learncurve n=200/scenario seed 42: PI-HGAT R2=0.9792
-12:15:17       learncurve n=200/scenario seed 43: PI-HGAT R2=0.9678
-12:17:32       learncurve n=200/scenario seed 44: PI-HGAT R2=0.9754
-12:20:53       learncurve n=249/scenario seed 42: PI-HGAT R2=0.9785
-12:23:15       learncurve n=249/scenario seed 43: PI-HGAT R2=0.9673
-12:25:35       learncurve n=249/scenario seed 44: PI-HGAT R2=0.9800
-12:25:35 [S3] learncurve done
-12:27:19       ablation mono_off seed 0: R2=0.9678 viol(U/COP/dT)=0.00/0.00/0.00
-12:28:47       ablation mono_off seed 1: R2=0.9290 viol(U/COP/dT)=0.00/0.00/0.00
-12:31:42       ablation mono_off seed 2: R2=0.9792 viol(U/COP/dT)=0.00/0.00/0.00
-12:35:23       ablation mono_on seed 0: R2=0.9814 viol(U/COP/dT)=0.00/0.00/0.00
-12:38:04       ablation mono_on seed 1: R2=0.9729 viol(U/COP/dT)=0.00/0.00/0.00
-12:40:35       ablation mono_on seed 2: R2=0.9729 viol(U/COP/dT)=0.00/0.00/0.00
-12:40:35 [S3] ablation done (mono on/off x 3 seeds)
-12:40:35 [S3] STEP3 DONE
+15:49:18 [S3] START study=all smoke=False device=cuda
+15:49:18       data ready: 2250 rows, 249 combos, 9 scenarios
+15:52:19       multiseed seed 0: PI-HGAT R2=0.9767 (176s)
+15:55:09       multiseed seed 1: PI-HGAT R2=0.9790 (165s)
+15:58:12       multiseed seed 2: PI-HGAT R2=0.9708 (177s)
+16:00:59       multiseed seed 3: PI-HGAT R2=0.9784 (160s)
+16:03:48       multiseed seed 4: PI-HGAT R2=0.9761 (162s)
+16:11:41       multiseed seed 5: PI-HGAT R2=0.9745 (357s)
+16:23:17       multiseed seed 6: PI-HGAT R2=0.9711 (687s)
+16:30:35       multiseed seed 7: PI-HGAT R2=0.9731 (422s)
+16:34:25       multiseed seed 8: PI-HGAT R2=0.9684 (216s)
+16:41:53       multiseed seed 9: PI-HGAT R2=0.9774 (430s)
+16:41:53 [S3] multiseed done (10 seeds x 4 models)
+16:45:31 [S3] combosplit done: PI-HGAT R2=0.9826 on unseen combos
+16:55:10       LOSO fold 1_Baseline (dT=0.00): PI-HGAT MAE=3.18
+17:07:29       LOSO fold 2 (dT=1.88): PI-HGAT MAE=0.70
+17:19:22       LOSO fold 3 (dT=2.67): PI-HGAT MAE=0.70
+17:35:25       LOSO fold 4 (dT=2.18): PI-HGAT MAE=0.71
+17:40:07       LOSO fold 5 (dT=4.47): PI-HGAT MAE=1.97
+17:49:19       LOSO fold 6 (dT=1.27): PI-HGAT MAE=0.65
+17:57:54       LOSO fold 7 (dT=1.88): PI-HGAT MAE=0.66
+18:06:14       LOSO fold 8 (dT=1.61): PI-HGAT MAE=0.65
+18:15:01       LOSO fold 9 (dT=3.14): PI-HGAT MAE=0.70
+18:15:01 [S3] loso done (9 folds x 4 models)
+18:17:03       learncurve n=25/scenario seed 42: PI-HGAT R2=0.2356
+18:19:10       learncurve n=25/scenario seed 43: PI-HGAT R2=0.3887
+18:19:45       learncurve n=25/scenario seed 44: PI-HGAT R2=-0.8960
+18:22:03       learncurve n=50/scenario seed 42: PI-HGAT R2=0.7351
+18:24:45       learncurve n=50/scenario seed 43: PI-HGAT R2=0.7316
+18:27:21       learncurve n=50/scenario seed 44: PI-HGAT R2=0.7898
+18:31:02       learncurve n=100/scenario seed 42: PI-HGAT R2=0.9401
+18:34:35       learncurve n=100/scenario seed 43: PI-HGAT R2=0.9317
+18:38:18       learncurve n=100/scenario seed 44: PI-HGAT R2=0.9377
+18:42:43       learncurve n=150/scenario seed 42: PI-HGAT R2=0.9570
+18:47:37       learncurve n=150/scenario seed 43: PI-HGAT R2=0.9567
+18:52:26       learncurve n=150/scenario seed 44: PI-HGAT R2=0.9692
+18:58:18       learncurve n=200/scenario seed 42: PI-HGAT R2=0.9732
+19:04:39       learncurve n=200/scenario seed 43: PI-HGAT R2=0.9585
+19:09:14       learncurve n=200/scenario seed 44: PI-HGAT R2=0.9708
+19:12:45       learncurve n=249/scenario seed 42: PI-HGAT R2=0.9589
+19:20:26       learncurve n=249/scenario seed 43: PI-HGAT R2=0.9713
+19:23:26       learncurve n=249/scenario seed 44: PI-HGAT R2=0.9502
+19:23:26 [S3] learncurve done
+19:31:44       ablation mono_off seed 0: R2=0.9766 viol(U/COP/dT)=0.00/0.00/0.00
+19:38:21       ablation mono_off seed 1: R2=0.9707 viol(U/COP/dT)=0.00/0.00/0.00
+19:43:45       ablation mono_off seed 2: R2=0.9553 viol(U/COP/dT)=0.00/0.00/0.00
+19:51:19       ablation mono_on seed 0: R2=0.9526 viol(U/COP/dT)=0.00/0.00/0.00
+19:56:59       ablation mono_on seed 1: R2=0.9739 viol(U/COP/dT)=0.00/0.00/0.00
+20:04:17       ablation mono_on seed 2: R2=0.9698 viol(U/COP/dT)=0.00/0.00/0.00
+20:04:17 [S3] ablation done (mono on/off x 3 seeds)
+20:04:17 [S3] STEP3 DONE

@@ -5,8 +5,7 @@
       "6",
       "7",
       "4",
-      "9",
-      "5"
+      "9"
     ],
     "val": [
       "8",
@@ -14,6 +13,9 @@
     ],
     "test": [
       "3"
+    ],
+    "extrapolation_test": [
+      "5"
     ]
   },
   "train_params": {
@@ -44,5 +46,5 @@
   "n_combos": 249,
   "smoke": false,
   "study": "all",
-  "timestamp": "2026-07-06 11:01:50"
+  "timestamp": "2026-07-06 15:49:18"
 }
