@@ -1,0 +1,48 @@
+{
+  "scenario_split": {
+    "train": [
+      "1_Baseline",
+      "6",
+      "7",
+      "4",
+      "9",
+      "5"
+    ],
+    "val": [
+      "8",
+      "2"
+    ],
+    "test": [
+      "3"
+    ]
+  },
+  "train_params": {
+    "batch_size": 64,
+    "epochs": 300,
+    "lr": 0.0005,
+    "weight_decay": 1e-05,
+    "patience": 40
+  },
+  "gnn_params": {
+    "hidden_channels": 32,
+    "num_layers": 2,
+    "heads": 2,
+    "dropout": 0.05
+  },
+  "feature_names": [
+    "P1_Wall_U",
+    "P2_Roof_U",
+    "P3_Roof_Reflectance",
+    "P4_Win_U",
+    "P4_Win_SHGC",
+    "P5_COP",
+    "P6_Cool_SP",
+    "P7_LPD",
+    "Climate_DeltaT"
+  ],
+  "n_rows": 2250,
+  "n_combos": 249,
+  "smoke": false,
+  "study": "all",
+  "timestamp": "2026-07-06 11:01:50"
+}

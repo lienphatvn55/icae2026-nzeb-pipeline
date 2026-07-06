@@ -4,13 +4,20 @@ Heavy-compute companion to the notebook: runs the studies and writes CSV
 artifacts that notebook section S10b reads to draw Fig. 6 (2x2 robustness),
 Fig. 7 (sample-size learning curve) and the validation tables.
 
+Data + split come from pi_hgat.data_split (shared with the notebook: fixed
+6/2/1 scenario split, train spans the full ΔT hull, test = scenario 3).
+Training budget = pi_hgat.config.TRAIN_PARAMS (same as notebook S6).
+Writes results/step3_meta.json (split + params + timestamp) so notebook S10
+can verify the artifacts are not stale.
+
 Studies
   multiseed   10 seeds x 4 models on the scenario split -> results/step3_multiseed.csv
   loso        leave-one-scenario-out (9 folds, climate generalization)
               -> results/step3_loso.csv
   combosplit  held-out parameter combos, all scenarios (parameter generalization)
               -> results/step3_combosplit.csv
-  learncurve  PI-HGAT + XGBoost vs combos/scenario (25..249) -> results/step3_learncurve.csv
+  learncurve  all 4 models x 3 seeds vs combos/scenario (25..249)
+              -> results/step3_learncurve.csv
   ablation    physics monotonicity loss on/off x 3 seeds + finite-difference
               violation rates -> results/step3_ablation.csv
 
@@ -40,15 +47,20 @@ from torch_geometric.loader import DataLoader as PyGDL
 import xgboost as xgb
 
 from pi_hgat.config import NEO4J_JSON_PATH, GNN_PARAMS, TRAIN_PARAMS
+from pi_hgat.data_split import (FEATURE_NAMES, SCENARIO_SPLIT, load_lhs_arrays,
+                                split_indices)
 from pi_hgat.graph_builder import GraphBuilder
 from pi_hgat.models import PI_HGAT, BaselineANN
 from pi_hgat.physics_loss import PhysicsLoss
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-FEATURE_NAMES = ['P1_Wall_U', 'P2_Roof_U', 'P3_Roof_Reflectance', 'P4_Win_U',
-                 'P4_Win_SHGC', 'P5_COP', 'P6_Cool_SP', 'P7_LPD', 'Climate_DeltaT']
 PROGRESS = os.path.join('results', 'logs', 'step3_progress.log')
 MODEL_ORDER = ['PI-HGAT', 'XGBoost', 'ANN (MLP)', 'Linear Reg']
+# Same training budget as the notebook's main model (S6) — the previous
+# hard-coded 200/150-epoch caps made the studies undertrain PI-HGAT and the
+# learning curve answer "not enough data" when the truth was "not enough epochs".
+EPOCHS_CAP = TRAIN_PARAMS['epochs']      # 300
+PATIENCE = TRAIN_PARAMS['patience']      # 40
 
 
 def log(msg, study_level=False):
@@ -74,28 +86,9 @@ def metrics(yt, yp):
 
 # ------------------------------------------------------------------ data --- #
 def load_data():
-    df = pd.read_csv(os.path.join('data', 'aggregated_LHS_results.csv'))
-    samples, X, Y, groups = [], [], [], []
-    for _, row in df.iterrows():
-        s = {
-            'P1_Wall_U': 1.0 / row['@@P1_Wall_R@@'],
-            'P2_Roof_U': 1.0 / row['@@P2_Roof_R@@'],
-            'P3_Roof_Reflectance': 1.0 - row['@@P3_Roof_Abs@@'],
-            'P4_Win_U': row['@@P4_U@@'],
-            'P4_Win_SHGC': row['@@P4_SHGC@@'],
-            'P5_COP': row['@@P5_COP@@'],
-            'P6_Cool_SP': row['@@P6_ClgSetp@@'],
-            'P7_LPD': row['@@P7_LPD@@'],
-            'Climate_DeltaT': row['Climate_DeltaT'],
-        }
-        samples.append(s)
-        X.append([s[k] for k in FEATURE_NAMES])
-        Y.append(row['EUI_kWh_m2'])  # GROSS site EUI
-        groups.append(str(row['Scenario']))
-    param_cols = ['@@P1_Wall_R@@', '@@P2_Roof_R@@', '@@P3_Roof_Abs@@', '@@P4_U@@',
-                  '@@P4_SHGC@@', '@@P5_COP@@', '@@P6_ClgSetp@@', '@@P7_LPD@@']
-    combo_id = df[param_cols].round(4).astype(str).agg('|'.join, axis=1).values
-    return np.array(X), np.array(Y), np.array(groups), combo_id, samples
+    """Delegates to pi_hgat.data_split — the same loader the notebook uses."""
+    _, samples, X, Y, groups, combo_id = load_lhs_arrays()
+    return X, Y, groups, combo_id, samples
 
 
 def build_graphs(builder, samples, X, Y):
@@ -109,11 +102,8 @@ def build_graphs(builder, samples, X, Y):
 
 
 def scenario_split(X, Y, groups):
-    gss1 = GroupShuffleSplit(n_splits=1, test_size=0.3, random_state=42)
-    idx_tr, idx_tmp = next(gss1.split(X, Y, groups=groups))
-    gss2 = GroupShuffleSplit(n_splits=1, test_size=0.5, random_state=42)
-    iv, it = next(gss2.split(X[idx_tmp], Y[idx_tmp], groups=groups[idx_tmp]))
-    return idx_tr, idx_tmp[iv], idx_tmp[it]
+    """Fixed 6/2/1 scenario split from pi_hgat.data_split (same as notebook S2)."""
+    return split_indices(groups)
 
 
 def combo_split(X, Y, combo_id):
@@ -125,8 +115,8 @@ def combo_split(X, Y, combo_id):
 
 
 # -------------------------------------------------------------- training --- #
-def train_hgat(dataset, idx_tr, idx_va, idx_te, seed, epochs_cap=200,
-               lambda_mono=0.0, patience=30):
+def train_hgat(dataset, idx_tr, idx_va, idx_te, seed, epochs_cap=EPOCHS_CAP,
+               lambda_mono=0.0, patience=PATIENCE):
     seed_all(seed)
     model = PI_HGAT(metadata=dataset[0].metadata(),
                     hidden_channels=GNN_PARAMS['hidden_channels'], out_channels=1,
@@ -292,7 +282,7 @@ def study_loso(ctx):
         i_tr, i_va = next(gss.split(X[pool], Y[pool], groups=combo_id[pool]))
         idx_tr, idx_va = pool[i_tr], pool[i_va]
 
-        _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42, epochs_cap=150)
+        _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42)
         rows.append(dict(fold_scenario=fold, delta_t=delta_map[fold], model='PI-HGAT',
                          r2_test=m_te['r2'], rmse=m_te['rmse'], mae=m_te['mae'], mape=m_te['mape']))
         for name, (_, b_te, _) in train_baselines(X, Y, idx_tr, idx_va, idx_te, seed=42).items():
@@ -317,9 +307,15 @@ def study_combosplit(ctx):
     log(f'combosplit done: PI-HGAT R2={m_te["r2"]:.4f} on unseen combos', study_level=True)
 
 
-def study_learncurve(ctx, sizes=(25, 50, 100, 150, 200, 249)):
-    """Train on n combos/scenario (6 train scenarios), test on the 2 held-out
-    scenarios — answers 'how many LHS runs per climate are enough?'."""
+def study_learncurve(ctx, sizes=(25, 50, 100, 150, 200, 249), seeds=(42, 43, 44)):
+    """Train on n combos/scenario (6 train scenarios), test on the held-out
+    scenario — answers 'how many LHS runs per climate are enough?'.
+
+    All 4 benchmark models (review fix: Linear Reg was silently missing from
+    the old figure), multiple seeds for a mean ± range band, and the full
+    TRAIN_PARAMS budget so small-n points measure data sufficiency rather
+    than undertraining. The n subsets are nested (same shuffled combo order
+    for every seed; seeds vary model init/minibatch order only)."""
     X, Y, groups, combo_id, dataset = (ctx['X'], ctx['Y'], ctx['groups'],
                                        ctx['combo_id'], ctx['dataset'])
     idx_tr_full, idx_va, idx_te = scenario_split(X, Y, groups)
@@ -330,15 +326,18 @@ def study_learncurve(ctx, sizes=(25, 50, 100, 150, 200, 249)):
     for n in sizes:
         keep = set(tr_combos[:n])
         idx_tr = idx_tr_full[np.isin(combo_id[idx_tr_full], list(keep))]
-        _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42, epochs_cap=150)
-        rows.append(dict(n_per_scenario=n, n_train=len(idx_tr), model='PI-HGAT',
-                         r2_test=m_te['r2'], rmse=m_te['rmse'], mae=m_te['mae']))
-        b = train_baselines(X, Y, idx_tr, idx_va, idx_te, seed=42)
-        for name in ('XGBoost', 'ANN (MLP)'):
-            b_te = b[name][1]
-            rows.append(dict(n_per_scenario=n, n_train=len(idx_tr), model=name,
-                             r2_test=b_te['r2'], rmse=b_te['rmse'], mae=b_te['mae']))
-        log(f'learncurve n={n}/scenario: PI-HGAT R2={m_te["r2"]:.4f}')
+        for seed in seeds:
+            _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=seed)
+            rows.append(dict(n_per_scenario=n, n_train=len(idx_tr), seed=seed,
+                             model='PI-HGAT', r2_test=m_te['r2'],
+                             rmse=m_te['rmse'], mae=m_te['mae']))
+            b = train_baselines(X, Y, idx_tr, idx_va, idx_te, seed=seed)
+            for name in ('XGBoost', 'ANN (MLP)', 'Linear Reg'):
+                b_te = b[name][1]
+                rows.append(dict(n_per_scenario=n, n_train=len(idx_tr), seed=seed,
+                                 model=name, r2_test=b_te['r2'],
+                                 rmse=b_te['rmse'], mae=b_te['mae']))
+            log(f'learncurve n={n}/scenario seed {seed}: PI-HGAT R2={m_te["r2"]:.4f}')
     pd.DataFrame(rows).to_csv('results/step3_learncurve.csv', index=False)
     log('learncurve done', study_level=True)
 
@@ -397,6 +396,17 @@ def main():
     log(f'data ready: {X.shape[0]} rows, {len(np.unique(combo_id))} combos, '
         f'{len(np.unique(groups))} scenarios')
 
+    # Provenance record so notebook S10 can assert artifacts match its config
+    import json as _json
+    meta = dict(scenario_split=SCENARIO_SPLIT, train_params=TRAIN_PARAMS,
+                gnn_params=GNN_PARAMS, feature_names=FEATURE_NAMES,
+                n_rows=int(X.shape[0]), n_combos=int(len(np.unique(combo_id))),
+                smoke=bool(args.smoke), study=args.study,
+                timestamp=time.strftime('%Y-%m-%d %H:%M:%S'))
+    os.makedirs('results', exist_ok=True)
+    with open(os.path.join('results', 'step3_meta.json'), 'w', encoding='utf-8') as f:
+        _json.dump(meta, f, indent=2)
+
     if args.smoke:
         global train_hgat
         orig = train_hgat
@@ -417,7 +427,10 @@ def main():
             elif name == 'combosplit':
                 study_combosplit(ctx)
             elif name == 'learncurve':
-                study_learncurve(ctx, sizes=(25, 249) if args.smoke else (25, 50, 100, 150, 200, 249))
+                if args.smoke:
+                    study_learncurve(ctx, sizes=(25, 249), seeds=(42,))
+                else:
+                    study_learncurve(ctx)
             elif name == 'ablation':
                 study_ablation(ctx, seeds=(0,) if args.smoke else (0, 1, 2))
         except Exception as e:  # keep going; report at the end
