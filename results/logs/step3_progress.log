@@ -68,3 +68,19 @@
 02:24:44       loso_ext fold 9 (dT=3.14): PI-HGAT combined R2=0.9786 (516s)
 02:24:44 [S3] loso_ext done (9 folds x 4 models x 3 eval sets)
 02:24:44 [S3] STEP3 DONE
+03:39:13 [S3] START study=ablation smoke=True device=cuda
+03:39:14       data ready: 2250 rows, 249 combos, 9 scenarios
+03:39:22       ablation mono_off seed 0: R2=-1.6200 R2_extra(S4)=-4.3692 viol(U/COP/dT)=0.62/0.38/0.00
+03:39:31       ablation mono_on seed 0: R2=-1.6609 R2_extra(S4)=-4.4509 viol(U/COP/dT)=0.62/0.38/0.00
+03:39:31 [S3] ablation done (mono on/off x 3 seeds)
+03:39:31 [S3] STEP3 DONE
+03:39:50 [S3] START study=ablation smoke=False device=cuda
+03:39:50       data ready: 2250 rows, 249 combos, 9 scenarios
+03:42:58       ablation mono_off seed 0: R2=0.9761 R2_extra(S4)=0.9070 viol(U/COP/dT)=0.00/0.00/0.00
+03:47:33       ablation mono_off seed 1: R2=0.9730 R2_extra(S4)=0.8936 viol(U/COP/dT)=0.00/0.00/0.00
+03:54:06       ablation mono_off seed 2: R2=0.9711 R2_extra(S4)=0.8850 viol(U/COP/dT)=0.00/0.00/0.00
+03:57:31       ablation mono_on seed 0: R2=0.9455 R2_extra(S4)=0.8138 viol(U/COP/dT)=0.00/0.00/0.00
+04:04:31       ablation mono_on seed 1: R2=0.9783 R2_extra(S4)=0.9104 viol(U/COP/dT)=0.00/0.00/0.00
+04:11:23       ablation mono_on seed 2: R2=0.9710 R2_extra(S4)=0.8843 viol(U/COP/dT)=0.00/0.00/0.00
+04:11:23 [S3] ablation done (mono on/off x 3 seeds)
+04:11:23 [S3] STEP3 DONE

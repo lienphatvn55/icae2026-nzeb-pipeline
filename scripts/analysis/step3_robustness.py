@@ -452,11 +452,37 @@ def study_learncurve(ctx, sizes=(25, 50, 100, 150, 200, 249), seeds=(42, 43, 44)
 
 def study_ablation(ctx, seeds=(0, 1, 2), lam=0.05):
     """Physics monotonicity loss on/off. Violation rate = share of test samples
-    where a finite-difference perturbation moves EUI the physically wrong way."""
+    where a finite-difference perturbation moves EUI the physically wrong way.
+    Each variant is ALSO scored on the S4 extrapolation set (250 held-out MAIN
+    rows + 150 unseen-combo seed-2810 external rows, n=400 — same protocol as
+    notebook S8(b)): the regularizer's value, if any, is beyond the train hull,
+    not on the interpolation test where both variants are already monotonic."""
     X, Y, groups, dataset, samples, builder = (ctx['X'], ctx['Y'], ctx['groups'],
                                                ctx['dataset'], ctx['samples'], ctx['builder'])
     idx_tr, idx_va, idx_te = scenario_split(X, Y, groups)
     probe_idx = np.random.RandomState(0).choice(idx_te, size=100, replace=False)
+
+    extra_ds = [dataset[i] for i in np.where(groups == 'S4')[0]]
+    ext = load_external_dataframe()
+    ext['Scenario'] = ext['Scenario'].astype(str)
+    for _, row in ext[ext['Scenario'] == 'S4'].iterrows():
+        s = row_to_params(row)
+        d = builder.create_sample_graph(s)
+        d.y = torch.tensor([[row['EUI_kWh_m2']]], dtype=torch.float)
+        d.global_params = torch.tensor([[s[k] for k in FEATURE_NAMES]],
+                                       dtype=torch.float)
+        extra_ds.append(d)
+
+    def score_extra(model):
+        model.eval()
+        ps, ts = [], []
+        with torch.no_grad():
+            for b in PyGDL(extra_ds, batch_size=TRAIN_PARAMS['batch_size']):
+                b = b.to(DEVICE)
+                out = model(b.x_dict, b.edge_index_dict, b.batch_dict, b.global_params)
+                ps.extend(out.cpu().numpy().flatten())
+                ts.extend(b.y.cpu().numpy().flatten())
+        return metrics(np.array(ts), np.array(ps))
     perturb = [('P1_Wall_U', +0.10, +1),    # U up   -> EUI must rise
                ('P5_COP',    +0.25, -1),    # COP up -> EUI must fall
                ('Climate_DeltaT', +0.50, +1)]  # dT up -> EUI must rise
@@ -466,6 +492,7 @@ def study_ablation(ctx, seeds=(0, 1, 2), lam=0.05):
         for seed in seeds:
             model, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te,
                                                seed=seed, lambda_mono=lam_v)
+            m_x = score_extra(model)
             viol = {}
             for key, d, sign in perturb:
                 bad = 0
@@ -478,9 +505,12 @@ def study_ablation(ctx, seeds=(0, 1, 2), lam=0.05):
                 viol[key] = bad / len(probe_idx)
             rows.append(dict(variant=variant, seed=seed, lambda_mono=lam_v,
                              r2_test=m_te['r2'], rmse=m_te['rmse'],
+                             r2_extra=m_x['r2'], rmse_extra=m_x['rmse'],
+                             mae_extra=m_x['mae'],
                              viol_wallU=viol['P1_Wall_U'], viol_cop=viol['P5_COP'],
                              viol_deltaT=viol['Climate_DeltaT']))
             log(f'ablation {variant} seed {seed}: R2={m_te["r2"]:.4f} '
+                f'R2_extra(S4)={m_x["r2"]:.4f} '
                 f'viol(U/COP/dT)={viol["P1_Wall_U"]:.2f}/{viol["P5_COP"]:.2f}/{viol["Climate_DeltaT"]:.2f}')
     pd.DataFrame(rows).to_csv('results/step3_ablation.csv', index=False)
     log('ablation done (mono on/off x 3 seeds)', study_level=True)

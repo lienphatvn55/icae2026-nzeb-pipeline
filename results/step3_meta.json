@@ -45,7 +45,6 @@
   "n_rows": 2250,
   "n_combos": 249,
   "smoke": false,
-  "study": "loso_ext",
-  "timestamp": "2026-07-07 01:29:25",
-  "note": "2026-07-07: scenario IDs relabelled 1_Baseline/2..9 -> Baseline/S1..S8 (pure rename, no recomputation; mapping in pi_hgat.data_split.SCENARIO_LABELS)"
+  "study": "ablation",
+  "timestamp": "2026-07-08 03:39:50"
 }
