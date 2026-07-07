@@ -12,8 +12,15 @@ can verify the artifacts are not stale.
 
 Studies
   multiseed   10 seeds x 4 models on the scenario split -> results/step3_multiseed.csv
-  loso        leave-one-scenario-out (9 folds, climate generalization)
-              -> results/step3_loso.csv
+  loso        leave-one-scenario-out (9 folds, climate generalization,
+              SAME 249 combos as train) -> results/step3_loso.csv
+  loso_ext    leave-one-scenario-out where each fold is ALSO evaluated on the
+              scenario's independent seed-2810 external replicate (150 unseen
+              combos) alongside its 250 held-out MAIN rows -> per-fold metrics
+              for eval_set in {main, external, combined}. The main-vs-external
+              gap isolates the parameter-generalization cost from the climate
+              cost, systematically for all 9 climates (not just scenario 5)
+              -> results/step3_loso_ext.csv
   combosplit  held-out parameter combos, all scenarios (parameter generalization)
               -> results/step3_combosplit.csv
   learncurve  all 4 models x 3 seeds vs combos/scenario (25..249)
@@ -48,6 +55,7 @@ import xgboost as xgb
 
 from pi_hgat.config import NEO4J_JSON_PATH, GNN_PARAMS, TRAIN_PARAMS
 from pi_hgat.data_split import (FEATURE_NAMES, SCENARIO_SPLIT, load_lhs_arrays,
+                                load_external_dataframe, row_to_params,
                                 split_indices)
 from pi_hgat.graph_builder import GraphBuilder
 from pi_hgat.models import PI_HGAT, BaselineANN
@@ -183,8 +191,10 @@ def train_hgat(dataset, idx_tr, idx_va, idx_te, seed, epochs_cap=EPOCHS_CAP,
     return model, metrics(yt_tr, yp_tr), metrics(yt_te, yp_te), fit_s
 
 
-def train_baselines(X, Y, idx_tr, idx_va, idx_te, seed):
-    """Returns {name: (m_train, m_test, fit_seconds)} for XGB / ANN / LR."""
+def train_baselines(X, Y, idx_tr, idx_va, idx_te, seed, return_models=False):
+    """Returns {name: (m_train, m_test, fit_seconds)} for XGB / ANN / LR.
+    With return_models=True also returns the fitted estimators + scaler so a
+    study can score additional evaluation sets (e.g. the external replicate)."""
     Xtr, Ytr = X[idx_tr], Y[idx_tr]
     Xv, Yv = X[idx_va], Y[idx_va]
     Xte, Yte = X[idx_te], Y[idx_te]
@@ -236,6 +246,8 @@ def train_baselines(X, Y, idx_tr, idx_va, idx_te, seed):
         p_tr = ann(torch.tensor(Xtr_s, dtype=torch.float).to(DEVICE)).cpu().numpy().flatten()
         p_te = ann(torch.tensor(Xte_s, dtype=torch.float).to(DEVICE)).cpu().numpy().flatten()
     out['ANN (MLP)'] = (metrics(Ytr, p_tr), metrics(Yte, p_te), fit_s)
+    if return_models:
+        return out, dict(scaler=sc, lr=lr_m, xgb=xgb_m, ann=ann)
     return out
 
 
@@ -291,6 +303,102 @@ def study_loso(ctx):
         log(f'LOSO fold {fold} (dT={delta_map[fold]:.2f}): PI-HGAT MAE={m_te["mae"]:.2f}')
     pd.DataFrame(rows).to_csv('results/step3_loso.csv', index=False)
     log('loso done (9 folds x 4 models)', study_level=True)
+
+
+def study_loso_ext(ctx, folds=None):
+    """LOSO with external replicate: for every scenario, hold it out of
+    train/val ENTIRELY, then evaluate on three sets —
+      main      its 250 MAIN rows (combos seen in training, climate unseen)
+      external  its 150 seed-2810 rows (combos AND climate unseen)
+      combined  both (n=400)
+    The main-vs-external gap isolates the parameter-generalization cost from
+    the climate cost, per climate. Generalizes the scenario-5-only S8
+    extrapolation test to all 9 scenarios (no fixed scenario choice — the
+    method section can state the protocol without hand-picking a climate)."""
+    X, Y, groups, combo_id, dataset, builder = (
+        ctx['X'], ctx['Y'], ctx['groups'], ctx['combo_id'],
+        ctx['dataset'], ctx['builder'])
+    delta_map = {g: X[groups == g][0, FEATURE_NAMES.index('Climate_DeltaT')]
+                 for g in np.unique(groups)}
+
+    ext_all = load_external_dataframe()
+    ext_all['Scenario'] = ext_all['Scenario'].astype(str)
+
+    def build_ext(sub_df):
+        ds, xs, ys = [], [], []
+        for _, row in sub_df.iterrows():
+            s = row_to_params(row)
+            d = builder.create_sample_graph(s)
+            d.y = torch.tensor([[row['EUI_kWh_m2']]], dtype=torch.float)
+            d.global_params = torch.tensor([[s[k] for k in FEATURE_NAMES]],
+                                           dtype=torch.float)
+            ds.append(d); xs.append([s[k] for k in FEATURE_NAMES])
+            ys.append(row['EUI_kWh_m2'])
+        return ds, np.array(xs), np.array(ys)
+
+    def hgat_predict(model, ds):
+        loader = PyGDL(ds, batch_size=TRAIN_PARAMS['batch_size'])
+        model.eval()
+        ps, ts = [], []
+        with torch.no_grad():
+            for b in loader:
+                b = b.to(DEVICE)
+                out = model(b.x_dict, b.edge_index_dict, b.batch_dict, b.global_params)
+                ps.extend(out.cpu().numpy().flatten())
+                ts.extend(b.y.cpu().numpy().flatten())
+        return np.array(ts), np.array(ps)
+
+    rows = []
+    fold_list = folds or sorted(np.unique(groups))
+    for fold in fold_list:
+        idx_te = np.where(groups == fold)[0]
+        pool = np.where(groups != fold)[0]
+        gss = GroupShuffleSplit(n_splits=1, test_size=0.15, random_state=42)
+        i_tr, i_va = next(gss.split(X[pool], Y[pool], groups=combo_id[pool]))
+        idx_tr, idx_va = pool[i_tr], pool[i_va]
+
+        ext_df = ext_all[ext_all['Scenario'] == fold]
+        if not len(ext_df):
+            log(f'loso_ext fold {fold}: no external replicate — skipped')
+            continue
+        ext_ds, ext_X, ext_Y = build_ext(ext_df)
+
+        hgat, _, _, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42)
+        b_out, b_models = train_baselines(X, Y, idx_tr, idx_va, idx_te,
+                                          seed=42, return_models=True)
+        sc = b_models['scaler']
+        Xm_s, Xe_s = sc.transform(X[idx_te]), sc.transform(ext_X)
+
+        tm, pm_hgat = hgat_predict(hgat, [dataset[i] for i in idx_te])
+        te_, pe_hgat = hgat_predict(hgat, ext_ds)
+        b_models['ann'].eval()
+        with torch.no_grad():
+            pm_ann = b_models['ann'](torch.tensor(Xm_s, dtype=torch.float).to(DEVICE)).cpu().numpy().flatten()
+            pe_ann = b_models['ann'](torch.tensor(Xe_s, dtype=torch.float).to(DEVICE)).cpu().numpy().flatten()
+        preds = {
+            'PI-HGAT':    (pm_hgat, pe_hgat),
+            'XGBoost':    (b_models['xgb'].predict(Xm_s), b_models['xgb'].predict(Xe_s)),
+            'ANN (MLP)':  (pm_ann, pe_ann),
+            'Linear Reg': (b_models['lr'].predict(Xm_s), b_models['lr'].predict(Xe_s)),
+        }
+        y_main, y_ext = Y[idx_te], ext_Y
+        for name, (p_main, p_ext) in preds.items():
+            for eval_set, yt, yp in (('main', y_main, p_main),
+                                     ('external', y_ext, p_ext),
+                                     ('combined', np.concatenate([y_main, y_ext]),
+                                                  np.concatenate([p_main, p_ext]))):
+                m = metrics(yt, yp)
+                rows.append(dict(fold_scenario=fold, delta_t=delta_map[fold],
+                                 model=name, eval_set=eval_set, n=len(yt),
+                                 r2=m['r2'], rmse=m['rmse'], mae=m['mae'],
+                                 mape=m['mape']))
+        r2c = [r for r in rows if r['fold_scenario'] == fold
+               and r['model'] == 'PI-HGAT' and r['eval_set'] == 'combined'][0]['r2']
+        log(f'loso_ext fold {fold} (dT={delta_map[fold]:.2f}): '
+            f'PI-HGAT combined R2={r2c:.4f} ({fit_s:.0f}s)')
+    pd.DataFrame(rows).to_csv('results/step3_loso_ext.csv', index=False)
+    log(f'loso_ext done ({len(fold_list)} folds x 4 models x 3 eval sets)',
+        study_level=True)
 
 
 def study_combosplit(ctx):
@@ -382,7 +490,8 @@ def study_ablation(ctx, seeds=(0, 1, 2), lam=0.05):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--study', default='all',
-                    choices=['all', 'multiseed', 'loso', 'combosplit', 'learncurve', 'ablation'])
+                    choices=['all', 'multiseed', 'loso', 'loso_ext', 'combosplit',
+                             'learncurve', 'ablation'])
     ap.add_argument('--smoke', action='store_true',
                     help='tiny run (2 seeds, 2 LOSO folds, epochs_cap small) to validate code paths')
     args = ap.parse_args()
@@ -416,7 +525,7 @@ def main():
         train_hgat = fast
 
     todo = ([args.study] if args.study != 'all'
-            else ['multiseed', 'combosplit', 'loso', 'learncurve', 'ablation'])
+            else ['multiseed', 'combosplit', 'loso', 'loso_ext', 'learncurve', 'ablation'])
     failed = []
     for name in todo:
         try:
@@ -424,6 +533,8 @@ def main():
                 study_multiseed(ctx, seeds=range(2) if args.smoke else range(10))
             elif name == 'loso':
                 study_loso(ctx)
+            elif name == 'loso_ext':
+                study_loso_ext(ctx, folds=['1_Baseline', '5'] if args.smoke else None)
             elif name == 'combosplit':
                 study_combosplit(ctx)
             elif name == 'learncurve':

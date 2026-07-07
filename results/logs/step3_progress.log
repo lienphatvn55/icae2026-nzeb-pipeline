@@ -49,3 +49,22 @@
 20:04:17       ablation mono_on seed 2: R2=0.9698 viol(U/COP/dT)=0.00/0.00/0.00
 20:04:17 [S3] ablation done (mono on/off x 3 seeds)
 20:04:17 [S3] STEP3 DONE
+01:28:11 [S3] START study=loso_ext smoke=True device=cuda
+01:28:11       data ready: 2250 rows, 249 combos, 9 scenarios
+01:28:29       loso_ext fold 1_Baseline (dT=0.00): PI-HGAT combined R2=-8.5087 (6s)
+01:28:49       loso_ext fold 5 (dT=4.47): PI-HGAT combined R2=-0.9298 (7s)
+01:28:49 [S3] loso_ext done (2 folds x 4 models x 3 eval sets)
+01:28:49 [S3] STEP3 DONE
+01:29:24 [S3] START study=loso_ext smoke=False device=cuda
+01:29:25       data ready: 2250 rows, 249 combos, 9 scenarios
+01:32:09       loso_ext fold 1_Baseline (dT=0.00): PI-HGAT combined R2=0.1932 (154s)
+01:35:44       loso_ext fold 2 (dT=1.88): PI-HGAT combined R2=0.9735 (201s)
+01:42:46       loso_ext fold 3 (dT=2.67): PI-HGAT combined R2=0.9791 (402s)
+01:51:42       loso_ext fold 4 (dT=2.18): PI-HGAT combined R2=0.9792 (521s)
+01:58:56       loso_ext fold 5 (dT=4.47): PI-HGAT combined R2=0.8808 (409s)
+02:02:34       loso_ext fold 6 (dT=1.27): PI-HGAT combined R2=0.9664 (201s)
+02:07:23       loso_ext fold 7 (dT=1.88): PI-HGAT combined R2=0.9756 (271s)
+02:15:43       loso_ext fold 8 (dT=1.61): PI-HGAT combined R2=0.9792 (485s)
+02:24:44       loso_ext fold 9 (dT=3.14): PI-HGAT combined R2=0.9786 (516s)
+02:24:44 [S3] loso_ext done (9 folds x 4 models x 3 eval sets)
+02:24:44 [S3] STEP3 DONE

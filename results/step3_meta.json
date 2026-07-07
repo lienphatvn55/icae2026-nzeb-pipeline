@@ -45,6 +45,6 @@
   "n_rows": 2250,
   "n_combos": 249,
   "smoke": false,
-  "study": "all",
-  "timestamp": "2026-07-06 15:49:18"
+  "study": "loso_ext",
+  "timestamp": "2026-07-07 01:29:25"
 }

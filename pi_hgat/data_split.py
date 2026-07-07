@@ -59,8 +59,11 @@ SCENARIO_SPLIT = {
     'extrapolation_test': ['5'],
 }
 
-# Scenarios with an independent-seed external LHS replicate (seed 2810).
-EXTERNAL_SCENARIOS = ['1_Baseline', '2', '5']
+# Scenarios with an independent-seed external LHS replicate (seed 2810,
+# 150 unseen combos each). Since 2026-07-07 ALL 9 scenarios have one, which
+# enables the systematic loso_ext study (per-climate combo+climate
+# generalization) instead of a hand-picked single extrapolation scenario.
+EXTERNAL_SCENARIOS = ['1_Baseline', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 def row_to_params(row):

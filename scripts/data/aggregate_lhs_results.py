@@ -106,7 +106,9 @@ def main():
     if args.external_test:
         LHS_ROOT = os.path.join(BASE_DIR, 'data', 'jEPlus-LHS', '0_Test', '0_LHS external test')
         OUTPUT_CSV = os.path.join(BASE_DIR, 'data', 'external_test_results.csv')
-        SCENARIOS = {k: v for k, v in SCENARIOS.items() if k in ['1_Baseline', '2', '5']}
+        # All 9 scenarios now have a 150-run seed-2810 replicate (2026-07-07);
+        # scenarios without a folder are skipped by the existence check below,
+        # so no hard-coded scenario filter is needed anymore.
 
     all_rows, n_fail = [], 0
 
