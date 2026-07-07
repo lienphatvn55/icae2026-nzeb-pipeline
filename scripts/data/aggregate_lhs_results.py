@@ -34,16 +34,22 @@ OUTPUT_CSV = os.path.join(BASE_DIR, 'data', 'aggregated_LHS_results.csv')
 # All 9 climate scenarios (folder name -> mean warming dT vs baseline, degC).
 # dT values follow the notebook's climate_delta_map (CMIP6 delta-morphing,
 # Tran-Anh et al. 2023; registry row B4).
+# Canonical IDs (2026-07-07 rename; old folder names in parentheses):
+#   Baseline (1_Baseline)  TMYx 2011-2025
+#   S1 (2)  ACCESS-CM2  SSP2-4.5  2050s     S5 (6)  MRI-ESM2-0  SSP2-4.5  2050s
+#   S2 (3)  ACCESS-CM2  SSP2-4.5  2080s     S6 (7)  MRI-ESM2-0  SSP2-4.5  2080s
+#   S3 (4)  ACCESS-CM2  SSP5-8.5  2050s     S7 (8)  MRI-ESM2-0  SSP5-8.5  2050s
+#   S4 (5)  ACCESS-CM2  SSP5-8.5  2080s     S8 (9)  MRI-ESM2-0  SSP5-8.5  2080s
 SCENARIOS = {
-    '1_Baseline': 0.0,
-    '2': 1.879,   # ACCESS-CM2  SSP245 2050s
-    '3': 2.665,   # ACCESS-CM2  SSP245 2080s
-    '4': 2.179,   # ACCESS-CM2  SSP585 2050s
-    '5': 4.472,   # ACCESS-CM2  SSP585 2080s
-    '6': 1.270,   # MRI-ESM2-0  SSP245 2050s
-    '7': 1.875,   # MRI-ESM2-0  SSP245 2080s
-    '8': 1.611,   # MRI-ESM2-0  SSP585 2050s
-    '9': 3.144,   # MRI-ESM2-0  SSP585 2080s
+    'Baseline': 0.0,
+    'S1': 1.879,
+    'S2': 2.665,
+    'S3': 2.179,
+    'S4': 4.472,
+    'S5': 1.270,
+    'S6': 1.875,
+    'S7': 1.611,
+    'S8': 3.144,
 }
 
 # (table row label, electricity col index, output column name)

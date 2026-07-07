@@ -6,16 +6,17 @@ between the interactive pipeline and the batch robustness studies.
 
 SCENARIO_SPLIT design (fixed, deliberate):
 
-  ΔT (°C, delta-morphing) per scenario:
-    1_Baseline=0.000 · 6=1.270 · 8=1.611 · 7=1.875 · 2=1.879 · 4=2.179
-    · 3=2.665 · 9=3.144 · 5=4.472
+  Canonical scenario IDs (2026-07-07 rename; ΔT °C, delta-morphing):
+    Baseline=0.000 (TMYx 2011-2025) · S5=1.270 · S7=1.611 · S6=1.875
+    · S1=1.879 · S3=2.179 · S2=2.665 · S8=3.144 · S4=4.472
+    (full GCM/SSP/horizon metadata: SCENARIO_LABELS below)
 
-  train {1_Baseline, 6, 7, 4, 9} — spans ΔT [0, 3.144].
-  val   {8 (1.611), 2 (1.879)}  — two interpolation points in different
+  train {Baseline, S5, S6, S3, S8} — spans ΔT [0, 3.144].
+  val   {S7 (1.611), S1 (1.879)}  — two interpolation points in different
         regions -> stable early stopping / model selection.
-  test  {3 (2.665)}             — a genuine interpolation gap (±0.5 °C to
+  test  {S2 (2.665)}             — a genuine interpolation gap (±0.5 °C to
         the nearest train ΔT of 2.179 / 3.144).
-  extrapolation_test {5 (4.472)} — SSP585-2080s, the most severe warming,
+  extrapolation_test {S4 (4.472)} — SSP5-8.5 2080s, the most severe warming,
         held out ENTIRELY from train/val (its 250 MAIN rows are never used
         to fit or select the model). This is deliberate: an earlier version
         of this pipeline kept scenario 5 in train while ALSO evaluating it
@@ -24,18 +25,18 @@ SCENARIO_SPLIT design (fixed, deliberate):
         good "external" score there proved parameter generalization only,
         not climate extrapolation (a Q1 reviewer would call this data
         snooping on the pipeline's own marquee claim: "does the surrogate
-        hold up under the worst 2080s scenario?"). Excluding scenario 5 from
+        hold up under the worst 2080s scenario?"). Excluding scenario S4 from
         train/val turns it into a genuine held-out test on BOTH unseen
         retrofit combos AND unseen climate severity — see
-        extrapolation_test_arrays() below, which merges scenario 5's MAIN
+        extrapolation_test_arrays() below, which merges S4's MAIN
         rows (250, never trained on) with its external LHS replicate (150,
         seed 2810) into one n=400 evaluation set.
 
-  NOTE: scenario 2 (ΔT=1.879) and scenario 7 (ΔT=1.875, in train) are two
+  NOTE: S1 (ΔT=1.879) and S6 (ΔT=1.875, in train) are two
   distinct CMIP6 GCM/SSP combinations that happen to produce nearly
   identical mean warming (Δ=0.004 °C). Since the surrogate only sees ΔT as
   a scalar, it cannot distinguish them regardless of which side of the
-  split scenario 2 sits on — a structural limitation of the ΔT-scalar
+  split S1 sits on — a structural limitation of the ΔT-scalar
   climate representation, not a split design choice.
 """
 import os
@@ -53,17 +54,47 @@ PARAM_COLS = ['@@P1_Wall_R@@', '@@P2_Roof_R@@', '@@P3_Roof_Abs@@', '@@P4_U@@',
               '@@P4_SHGC@@', '@@P5_COP@@', '@@P6_ClgSetp@@', '@@P7_LPD@@']
 
 SCENARIO_SPLIT = {
-    'train': ['1_Baseline', '6', '7', '4', '9'],
-    'val':   ['8', '2'],
-    'test':  ['3'],
-    'extrapolation_test': ['5'],
+    'train': ['Baseline', 'S5', 'S6', 'S3', 'S8'],
+    'val':   ['S7', 'S1'],
+    'test':  ['S2'],
+    'extrapolation_test': ['S4'],
 }
+
+# Canonical scenario metadata (single source for every figure/table label).
+# Old folder names (pre 2026-07-07): Baseline=1_Baseline, S1=2, S2=3, S3=4,
+# S4=5, S5=6, S6=7, S7=8, S8=9.
+SCENARIO_LABELS = {
+    'Baseline': dict(gcm='TMYx 2011-2025', ssp='',        horizon='',      dt=0.0),
+    'S1':       dict(gcm='ACCESS-CM2',     ssp='SSP2-4.5', horizon='2050s', dt=1.879),
+    'S2':       dict(gcm='ACCESS-CM2',     ssp='SSP2-4.5', horizon='2080s', dt=2.665),
+    'S3':       dict(gcm='ACCESS-CM2',     ssp='SSP5-8.5', horizon='2050s', dt=2.179),
+    'S4':       dict(gcm='ACCESS-CM2',     ssp='SSP5-8.5', horizon='2080s', dt=4.472),
+    'S5':       dict(gcm='MRI-ESM2-0',     ssp='SSP2-4.5', horizon='2050s', dt=1.270),
+    'S6':       dict(gcm='MRI-ESM2-0',     ssp='SSP2-4.5', horizon='2080s', dt=1.875),
+    'S7':       dict(gcm='MRI-ESM2-0',     ssp='SSP5-8.5', horizon='2050s', dt=1.611),
+    'S8':       dict(gcm='MRI-ESM2-0',     ssp='SSP5-8.5', horizon='2080s', dt=3.144),
+}
+
+
+def scenario_label(sid, multiline=True, with_dt=True):
+    """Figure-ready label, e.g. 'S1\\nACCESS-CM2\\nSSP2-4.5 2050s\\n(+1.9°C)'.
+
+    GCM and SSP+horizon go on separate lines: a single combined detail line
+    (~25 chars) is wider than one column slot in a 9-column figure and made
+    neighbouring tick labels overlap (FigC1 review fix, 2026-07-07).
+    """
+    m = SCENARIO_LABELS[str(sid)]
+    parts = [str(sid), m['gcm'], f"{m['ssp']} {m['horizon']}".strip()]
+    if with_dt:
+        parts.append(f"(+{m['dt']:.1f}°C)")
+    parts = [p for p in parts if p]
+    return ('\n' if multiline else ' — ').join(parts)
 
 # Scenarios with an independent-seed external LHS replicate (seed 2810,
 # 150 unseen combos each). Since 2026-07-07 ALL 9 scenarios have one, which
 # enables the systematic loso_ext study (per-climate combo+climate
 # generalization) instead of a hand-picked single extrapolation scenario.
-EXTERNAL_SCENARIOS = ['1_Baseline', '2', '3', '4', '5', '6', '7', '8', '9']
+EXTERNAL_SCENARIOS = list(SCENARIO_LABELS.keys())
 
 
 def row_to_params(row):

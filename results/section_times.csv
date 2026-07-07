@@ -1,0 +1,17 @@
+section,description,seconds,pct
+S1,KG input (Neo4j→PyG),1.47,0.2
+S2,LHS load + split,0.07,0.0
+S3,Climate fingerprint,1.47,0.2
+S4,HeteroData build,0.42,0.0
+S5,Model init,0.29,0.0
+S6,PI-HGAT training,192.2,22.6
+S7,Baseline training,6.2,0.7
+S8,Benchmark + external,0.46,0.1
+S9,Prediction figures,2.37,0.3
+S10,Robustness (render),2.52,0.3
+S11,MOO setup,1.16,0.1
+S12,NSGA-III (baseline),211.29,24.8
+S13,TOPSIS + NZE,4.06,0.5
+S14,Sensitivity + climate MOO,418.06,49.1
+S15,GNNExplainer + PDP,8.21,1.0
+S16,Spatial explanation,0.78,0.1

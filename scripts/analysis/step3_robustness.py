@@ -534,7 +534,7 @@ def main():
             elif name == 'loso':
                 study_loso(ctx)
             elif name == 'loso_ext':
-                study_loso_ext(ctx, folds=['1_Baseline', '5'] if args.smoke else None)
+                study_loso_ext(ctx, folds=['Baseline', 'S4'] if args.smoke else None)
             elif name == 'combosplit':
                 study_combosplit(ctx)
             elif name == 'learncurve':
