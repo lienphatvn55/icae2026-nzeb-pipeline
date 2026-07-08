@@ -69,6 +69,15 @@ MODEL_ORDER = ['PI-HGAT', 'XGBoost', 'ANN (MLP)', 'Linear Reg']
 # learning curve answer "not enough data" when the truth was "not enough epochs".
 EPOCHS_CAP = TRAIN_PARAMS['epochs']      # 300
 PATIENCE = TRAIN_PARAMS['patience']      # 40
+# Must match the notebook's cell-26 LAMBDA_MONO (the model every downstream
+# section — MOO, TOPSIS, GNNExplainer, PDP — actually uses). Before this fix,
+# every study below except study_ablation trained with train_hgat's default
+# lambda_mono=0.0, so "PI-HGAT" in Fig6/Fig7/LOSO/combo-split was silently a
+# DIFFERENT (non-physics-informed) model than the one in Fig5/MOO/XAI —
+# same label, two configurations. The ablation (mono_on vs mono_off, within
+# seed noise) shows this was unlikely to change any reported conclusion, but
+# it must not remain an unlabeled inconsistency.
+LAMBDA_MONO = 0.05
 
 
 def log(msg, study_level=False):
@@ -268,7 +277,8 @@ def study_multiseed(ctx, seeds=range(10)):
     idx_tr, idx_va, idx_te = scenario_split(X, Y, groups)
     rows = []
     for seed in seeds:
-        _, m_tr, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed)
+        _, m_tr, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed,
+                                          lambda_mono=LAMBDA_MONO)
         rows.append(dict(model='PI-HGAT', seed=seed, fit_seconds=fit_s,
                          r2_train=m_tr['r2'], r2_test=m_te['r2'],
                          rmse=m_te['rmse'], mae=m_te['mae'], mape=m_te['mape']))
@@ -294,7 +304,8 @@ def study_loso(ctx):
         i_tr, i_va = next(gss.split(X[pool], Y[pool], groups=combo_id[pool]))
         idx_tr, idx_va = pool[i_tr], pool[i_va]
 
-        _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42)
+        _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42,
+                                       lambda_mono=LAMBDA_MONO)
         rows.append(dict(fold_scenario=fold, delta_t=delta_map[fold], model='PI-HGAT',
                          r2_test=m_te['r2'], rmse=m_te['rmse'], mae=m_te['mae'], mape=m_te['mape']))
         for name, (_, b_te, _) in train_baselines(X, Y, idx_tr, idx_va, idx_te, seed=42).items():
@@ -363,7 +374,8 @@ def study_loso_ext(ctx, folds=None):
             continue
         ext_ds, ext_X, ext_Y = build_ext(ext_df)
 
-        hgat, _, _, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42)
+        hgat, _, _, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42,
+                                       lambda_mono=LAMBDA_MONO)
         b_out, b_models = train_baselines(X, Y, idx_tr, idx_va, idx_te,
                                           seed=42, return_models=True)
         sc = b_models['scaler']
@@ -405,7 +417,8 @@ def study_combosplit(ctx):
     X, Y, combo_id, dataset = ctx['X'], ctx['Y'], ctx['combo_id'], ctx['dataset']
     idx_tr, idx_va, idx_te = combo_split(X, Y, combo_id)
     rows = []
-    _, m_tr, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42)
+    _, m_tr, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=42,
+                                      lambda_mono=LAMBDA_MONO)
     rows.append(dict(model='PI-HGAT', r2_train=m_tr['r2'], r2_test=m_te['r2'],
                      rmse=m_te['rmse'], mae=m_te['mae'], mape=m_te['mape']))
     for name, (b_tr, b_te, _) in train_baselines(X, Y, idx_tr, idx_va, idx_te, seed=42).items():
@@ -435,7 +448,8 @@ def study_learncurve(ctx, sizes=(25, 50, 100, 150, 200, 249), seeds=(42, 43, 44)
         keep = set(tr_combos[:n])
         idx_tr = idx_tr_full[np.isin(combo_id[idx_tr_full], list(keep))]
         for seed in seeds:
-            _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=seed)
+            _, _, m_te, fit_s = train_hgat(dataset, idx_tr, idx_va, idx_te, seed=seed,
+                                           lambda_mono=LAMBDA_MONO)
             rows.append(dict(n_per_scenario=n, n_train=len(idx_tr), seed=seed,
                              model='PI-HGAT', r2_test=m_te['r2'],
                              rmse=m_te['rmse'], mae=m_te['mae']))
