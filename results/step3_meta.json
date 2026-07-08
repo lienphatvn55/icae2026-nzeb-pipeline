@@ -45,6 +45,6 @@
   "n_rows": 2250,
   "n_combos": 249,
   "smoke": false,
-  "study": "ablation",
-  "timestamp": "2026-07-08 03:39:50"
+  "study": "all",
+  "timestamp": "2026-07-08 19:48:41"
 }
