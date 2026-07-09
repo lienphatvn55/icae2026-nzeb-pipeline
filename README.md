@@ -65,14 +65,13 @@ NZEB_PIPELINE_ICAE2026_v3.ipynb   the pipeline (single canonical notebook)
 RESULTS_FOR_PAPER.md              all numbers/tables for the manuscript
 requirements.txt                  verified package versions
 pi_hgat/                          config, graph builder, model, physics loss, objectives, data split
-scripts/analysis/                 robustness studies + figure/XAI code
+scripts/analysis/                 step3 robustness studies + fig_style (figure system)
 scripts/data/                     jEPlus/LHS aggregation
 data/                             inputs: aggregated LHS results, KG (Neo4j JSON),
                                   sourced cost/carbon registry (xlsx), weather (EPW), baseline E+ output
 results/figures/                  all paper figures (PNG + PDF)
 results/*.csv                     benchmark / robustness / Pareto / compute-cost tables
 best_hgat_v2.pt                   trained surrogate checkpoint
-docs/                             FIGURE_PLAN.md, CODE_MAP.md
 ```
 
 ## Data & licensing notes
