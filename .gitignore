@@ -11,3 +11,11 @@ __pycache__/
 # --- OS / editor noise
 Thumbs.db
 .DS_Store
+
+# --- scratch / debug artifacts (keep the repo clean for public release)
+*.tmp
+diff.txt
+nb_diff.txt
+*_temp.md
+scratch/
+
