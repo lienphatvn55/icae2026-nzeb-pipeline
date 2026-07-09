@@ -1,5 +1,5 @@
 model,train_s (multiseed mean±σ),inference (ms/eval),"projected MOO (93,600 evals, min)",Δ vs PI-HGAT (min)
-PI-HGAT,304.7 ± 118.6,36.818,57.4,0.0
-XGBoost,0.3 ± 0.1,0.247,0.4,-57.0
-ANN (MLP),11.7 ± 3.2,0.435,0.7,-56.7
-Linear Reg,0.0 ± 0.0,0.048,0.1,-57.3
+PI-HGAT,304.7 ± 118.6,16.44,25.6,0.0
+XGBoost,0.3 ± 0.1,0.143,0.2,-25.4
+ANN (MLP),11.7 ± 3.2,0.238,0.4,-25.2
+Linear Reg,0.0 ± 0.0,0.024,0.0,-25.6

@@ -52,7 +52,7 @@ Commit gốc: `9ce9bb7` (artifacts) + notebook seed-2. Ngày trích: 2026-07-09.
 | λ_mono (đã bật) | **0.05** (`PhysicsLoss(lambda_bound=0.1, lambda_mono=0.05)`) |
 | Optimizer | Adam (lr 5e-4, weight_decay 1e-5) + CosineAnnealingLR (T_max=300, eta_min 1e-6) + early stopping (patience 40) |
 | Dừng sớm tại | **epoch 291** |
-| Thời gian train (GPU) | **311.1 s** (seed 2, deterministic mode; ~1.6× chậm hơn non-deterministic) |
+| Thời gian train (GPU) | **~305 s** (multiseed mean 304.7 ± 118.6 s — số ổn định để báo cáo; wall-clock 1 lần chạy dao động theo tải máy, vd. các lần đo được 311–397 s. Deterministic mode ~1.6× chậm hơn non-deterministic) |
 | Best val loss (MSE) | **0.6066** |
 | Batch size / epochs cap | 64 / 300 |
 | Seed | TRAIN_SEED = 2 (chọn đại diện; xem §C2b) |
