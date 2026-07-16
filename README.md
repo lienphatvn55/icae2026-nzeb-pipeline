@@ -1,7 +1,9 @@
 # PI-HGAT: Physics-Informed Heterogeneous Graph Attention Network for Climate-Aware NZEB Retrofit
 
-Reproducibility artifact for the ICAE2026 paper *(title / authors — to be filled in on
-acceptance)*. The pipeline couples a knowledge-graph surrogate of a building energy model
+Reproducibility artifact for the paper **"Decision Support for NZEB Retrofits: Explainable
+Graph Surrogate Models and Life-Cycle Optimization under Climate Change in Vietnam"**
+(Lien Phat Huynh, Anh Tuan Nguyen, Yong Han Ahn — submitted to the 18th International
+Conference on Applied Energy, ICAE 2026, Jeju Island, Korea). The pipeline couples a knowledge-graph surrogate of a building energy model
 with multi-objective retrofit optimization and explainability, evaluated for climate
 extrapolation under CMIP6 2050s/2080s scenarios.
 
@@ -69,7 +71,7 @@ scripts/analysis/                 step3 robustness studies + fig_style (figure s
 scripts/data/                     jEPlus/LHS aggregation
 data/                             inputs: aggregated LHS results, KG (Neo4j JSON),
                                   sourced cost/carbon registry (xlsx), weather (EPW), baseline E+ output
-results/figures/                  all paper figures (PNG + PDF)
+results/figures/                  all figures (PNG + PDF); manuscript mapping in notebook Part 4
 results/*.csv                     benchmark / robustness / Pareto / compute-cost tables
 best_hgat_v2.pt                   trained surrogate checkpoint
 ```
