@@ -71,9 +71,9 @@ A 7-seed sweep against the 10-seed multiseed distribution (mean R²_test 0.9693 
 
 ---
 
-## C3 · Monotonicity validation (physics check) → Fig P3.5 (PDP, Section 15b)
+## C3 · Monotonicity validation (physics check) → Fig P3.5 (PDP, Section 14)
 
-Section 15b (cell 77) sweeps each feature and reports the Spearman ρ between the feature and the prediction (|ρ|→1 = monotonic in the expected direction), for all 4 models.
+Section 14 (cell 77) sweeps each feature and reports the Spearman ρ between the feature and the prediction (|ρ|→1 = monotonic in the expected direction), for all 4 models.
 
 | Feature (expected physical direction) | ANN | Linear Reg | PI-HGAT | XGBoost |
 |---|---|---|---|---|
@@ -256,5 +256,5 @@ Interpolation test = **S2** (ACCESS-CM2 SSP2-4.5 2080s, ΔT 2.665). Extrapolatio
 | Fig. 2 | `Fig_P0_2_ClimateEUI` | Section 3 (violin of the 2,250-run gross-EUI corpus) |
 | Fig. 3 | `Paper_Fig3_ExtrapolationBenchmark` | notebook Part 4 (R² bars + PI-HGAT scatter, withheld S4, n=400) |
 | Fig. 4 | `Paper_Fig4_WorstPareto3D` | notebook Part 4 (worst-2080s front, entropy-TOPSIS star) |
-| Fig. 5a | `Fig_P3_4_SpatialExplanation` | Section 16 |
-| Fig. 5b | `Fig_P3_1_NodeImportance` | Section 15 (node importance, % of top feature) |
+| Fig. 5a | `Fig_P3_4_SpatialExplanation` | Section 15 |
+| Fig. 5b | `Fig_P3_1_NodeImportance` | Section 13 (node importance, % of top feature) |
