@@ -4,7 +4,7 @@
 Produced by a reproducible run: `TRAIN_SEED = 2`, deterministic mode on, every robustness study uses `lambda_mono = 0.05`.
 The scientific results are bitwise-reproducible across independent runs (only wall-clock timing varies). Extracted 2026-07-09.
 
-> This file supersedes any earlier number sheet built from the 2026-07-03 backup notebook, which described an older, different pipeline (Net-EUI target, a since-removed parameter ladder, inflated metrics). See §C12 for the point-by-point differences.
+> This file supersedes any earlier number sheet built from the 2026-07-03 backup notebook, which described an older, different pipeline (Net-EUI target, a since-removed parameter ladder, inflated metrics).
 
 ---
 
@@ -61,7 +61,7 @@ The scientific results are bitwise-reproducible across independent runs (only wa
 Seeds alone are NOT enough to reproduce on GPU (GATConv scatter uses CUDA atomicAdd, whose float summation order varies run to run). Enabling `torch.use_deterministic_algorithms(True)` + `CUBLAS_WORKSPACE_CONFIG=:4096:8` makes two independent runs bitwise-identical.
 A 7-seed sweep against the 10-seed multiseed distribution (mean R²_test 0.9693 ± 0.0091) found **seed 2** closest to the mean → pinned. The notebook re-run gives R²=0.9741, matching the sweep prediction.
 
-### C2c — Multiseed (10 seeds, λ_mono=0.05) → Fig. 6
+### C2c — Multiseed (10 seeds, λ_mono=0.05) → Fig P1.2
 | Model | R²_test (mean ± σ) | RMSE (mean ± σ) | fit_s (mean ± σ) |
 |---|---|---|---|
 | **PI-HGAT** | 0.9693 ± 0.0091 | 1.067 ± 0.151 | 304.7 ± 118.6 |
@@ -71,7 +71,7 @@ A 7-seed sweep against the 10-seed multiseed distribution (mean R²_test 0.9693 
 
 ---
 
-## C3 · Monotonicity validation (physics check) → Fig. 15 (PDP, Section 15b)
+## C3 · Monotonicity validation (physics check) → Fig P3.5 (PDP, Section 15b)
 
 Section 15b (cell 77) sweeps each feature and reports the Spearman ρ between the feature and the prediction (|ρ|→1 = monotonic in the expected direction), for all 4 models.
 
@@ -93,7 +93,7 @@ PI-HGAT is perfectly monotonic in all 3 directions; XGBoost shows staircase/flat
 
 ---
 
-## C3c · LOSO & additional robustness (λ_mono=0.05) → Fig. 6, Fig. 7, FigC4
+## C3c · LOSO & additional robustness (λ_mono=0.05) → Fig P1.2, Fig P1.3, Fig P1.4
 
 **LOSO test MAE (kWh/m²/yr) — each climate scenario held out in turn:**
 | Fold (ΔT) | PI-HGAT | XGBoost | ANN | LR |
@@ -165,7 +165,7 @@ Reading the optimal package: **keep the envelope unchanged (L0 wall/roof/glazing
 
 ---
 
-## C7 · GNNExplainer — top node features (mask score, on the compromise-solution graph) → Fig. 12
+## C7 · GNNExplainer — top node features (mask score, on the compromise-solution graph) → Fig P3.1
 | Node type | Top features (score) |
 |---|---|
 | Zone | height **0.687**, volume 0.686, area 0.648 |
@@ -174,7 +174,7 @@ Reading the optimal package: **keep the envelope unchanged (L0 wall/roof/glazing
 
 > A "west-facing glazing dominant" narrative is NOT supported by this output — write per the table above.
 
-### C7b — Explainer fidelity (deterministic, with matched-sparsity random controls) → Fig. 14
+### C7b — Explainer fidelity (deterministic, with matched-sparsity random controls) → Fig P3.4
 | Metric | Deviation (kWh/m²/yr) | Random control |
 |---|---|---|
 | Fidelity+ (drop top-25% edges; necessity) | 0.37 | 0.28 ± 0.18 |
@@ -185,8 +185,8 @@ Necessity holds (Fid+ > control); sufficiency is limited (Fid− ≈ control) �
 
 ---
 
-## C8 · SHAP (Fig. 12b)
-The notebook saves `Fig12b_SHAP.png/.pdf` but does not print numeric values. A numeric top-5 mean|SHAP| table would need a small extra `print` and a re-run; for now read the values from the figure when inserting it.
+## C8 · SHAP (Fig P3.2)
+The notebook saves `Fig_P3_2_SHAP.png/.pdf` but does not print numeric values. A numeric top-5 mean|SHAP| table would need a small extra `print` and a re-run; for now read the values from the figure when inserting it.
 
 ---
 
@@ -230,42 +230,31 @@ Interpolation test = **S2** (ACCESS-CM2 SSP2-4.5 2080s, ΔT 2.665). Extrapolatio
 ## C11 · Figures in `results/figures/`
 | File | Location | Suggested caption |
 |---|---|---|
-| Fig2_KGSchema | §3.4.1 | Heterogeneous KG meta-schema (5 node / 5 edge types) + case-study building |
-| Fig3_Lifespan | §3.5 | Component service lives P1–P9 vs the 20-year study period |
-| Fig4_LCEDistribution | §3.6 | Embodied LCE distribution by module |
-| Fig5_PredictionPerf | §4.1 | Predicted vs actual, 4 models (test S2) |
-| Fig6_BenchmarkRobustness | §4.1 | Multiseed R² (mean±σ) + boxplot + training time |
-| Fig7_LearningCurve | §4.1 | Learning curve vs combos per scenario |
-| Fig8_Pareto3D + Fig8b_Convergence | §4.2 | 3D Pareto front + NSGA-III convergence |
-| Fig9_Pairwise, Fig11_Heatmap | §4.2–4.3 | Pairwise Pareto colored by TOPSIS + heatmap |
-| Fig10_LCEComparison | §4.3 | LCE by module: Baseline vs Optimal vs Max |
-| Fig12a_NodeImportance, Fig12b_SHAP | §4.4 | Node importance + SHAP |
-| Fig13_EdgeImportance, Fig14_SpatialExplanation | §4.4 | Edge importance + spatial explanation map + fidelity |
-| Fig15_PartialDependence | §4.4 | PDP physics-monotonicity validation (4 models) |
-| FigC1–C3 | §3.x | Climate fingerprint (EUI shift, paired sensitivity, end-use) |
-| FigC4_LOSOExternal | §4.1 | LOSO combined R² + MAE vs ΔT |
-| FigC5_ClimateMOO | §4.x | Climate-aware MOO (median/worst 2080s) |
+| Fig_P0_1_KGSchema | §3.4.1 | Heterogeneous KG meta-schema (5 node / 5 edge types) + case-study building |
+| Fig_P2_1_Lifespan | §3.5 | Component service lives P1–P9 vs the 20-year study period |
+| Fig_P2_2_LCEDistribution | §3.6 | Embodied LCE distribution by module |
+| Fig_P1_1_PredictionPerf | §4.1 | Predicted vs actual, 4 models (test S2) |
+| Fig_P1_2_BenchmarkRobustness | §4.1 | Multiseed R² (mean±σ) + boxplot + training time |
+| Fig_P1_3_LearningCurve | §4.1 | Learning curve vs combos per scenario |
+| Fig_P2_3_Pareto3D + Fig_P2_4_Convergence | §4.2 | 3D Pareto front + NSGA-III convergence |
+| Fig_P2_5_Pairwise, Fig_P2_7_Heatmap | §4.2–4.3 | Pairwise Pareto colored by TOPSIS + heatmap |
+| Fig_P2_6_LCEComparison | §4.3 | LCE by module: Baseline vs Optimal vs Max |
+| Fig_P3_1_NodeImportance, Fig_P3_2_SHAP | §4.4 | Node importance + SHAP |
+| Fig_P3_3_EdgeImportance, Fig_P3_4_SpatialExplanation | §4.4 | Edge importance + spatial explanation map + fidelity |
+| Fig_P3_5_PartialDependence | §4.4 | PDP physics-monotonicity validation (4 models) |
+| Fig_P0_2 – Fig_P0_4 | §3.x | Climate fingerprint (EUI shift, paired sensitivity, end-use) |
+| Fig_P1_4_LOSOExternal | §4.1 | LOSO combined R² + MAE vs ΔT |
+| Fig_P2_8_ClimateMOO | §4.x | Climate-aware MOO (median/worst 2080s) |
 | FigS1–S3 | Appendix | Training loss, benchmark bar, compute cost |
 
 ---
 
-## C12 · Provenance — differences vs the 2026-07-03 prototype (verified)
-This table records why the canonical numbers differ from an earlier prototype notebook, so the manuscript is not accidentally populated with superseded values.
-
-| Item | 2026-07-03 prototype | v3 (canonical) | Why v3 is correct |
-|---|---|---|---|
-| Target variable | Net EUI | **Gross EUI** | PV/BESS enter only at the objectives stage; avoids double-counting |
-| Data split | 6/1/2, 2 random test scenarios | **5/2/1, S4 fully held out** | True climate extrapolation, no data snooping |
-| λ_mono at run time | 0.0 | **0.05 (enabled + ablated)** | Validated, with an ablation on S4 |
-| NSGA encoding | continuous | **integer level** | Surrogate only queries real ladder values |
-| P1 Wall-U ladder | {1.07…0.29} | **{2.08…0.34}** (real jEPlus) | The old ladder was stale design values, removed in config.py |
-| Zone features | 5 (incl. PV_share) | **4** (no PV_share) | Different graph structure — prototype was an older build |
-| Model parameters | 43,617 | 43,329 | Due to the different feature set |
-| PI-HGAT R²_test | 0.992 | 0.974 | The old figure was inflated |
-| XGBoost R²_test | 0.932 | 0.668 (extrapolation −0.87) | v3's valuable cautionary finding |
-| TOPSIS Net EUI | 51.25 (NZEB achieved) | 88.93 (Below target) | v3 does not reach NZE under roof PV — a valid finding |
-| LCC / LCE | $248k / 904k | $704k / 6.09M | Different registry + target |
-
----
-
-*Status: all figures and tables in the notebook are rendered from the λ_mono=0.05 artifacts and reproduced by the canonical seed-2 run; numbers here match the committed notebook.*
+### C11b · Paper figures (as submitted to ICAE2026, 2026-07-15)
+| Paper Fig | File | Generated by |
+|---|---|---|
+| Fig. 1 | `0. FRAMEWORK DEMO.png` | drawn externally |
+| Fig. 2 | `Paper_Fig2_ClimateEUI` | notebook Part 4 (compact violin of the 2,250-run corpus) |
+| Fig. 3 | `Paper_Fig3_ExtrapolationBenchmark` | notebook Part 4 (R² bars + PI-HGAT scatter, withheld S4, n=400) |
+| Fig. 4 | `Paper_Fig4_WorstPareto3D` | notebook Part 4 (worst-2080s front, entropy-TOPSIS star) |
+| Fig. 5a | `Fig_P3_4_SpatialExplanation` | Section 16 |
+| Fig. 5b | `Paper_Fig5b_NodeImportancePct` | notebook Part 4 (node importance, % of top feature) |
